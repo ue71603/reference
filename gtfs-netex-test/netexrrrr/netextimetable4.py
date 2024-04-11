@@ -85,7 +85,7 @@ class JSONWriter:
 
     def save(self):
         import json
-        json.dump(self.out, open('/tmp/timetable4.json', 'w'), indent=4)
+        json.dump(self.out, open('../tmp/timetable4.json', 'w'), indent=4)
 
     def write_vj(self, tdg, departure_time, vj_attr):
         self.intermediate.append((tdg, departure_time, vj_attr,))
@@ -1133,8 +1133,8 @@ class Index2:
         self.export_vj_uris()
         self.export_stringpool()
 
-netex_timetable = NeTExTimetable("/tmp/timetable4.xml")
-jw = JSONWriter("/tmp/timetable4.json")
+netex_timetable = NeTExTimetable("../tmp/timetable4.xml")
+jw = JSONWriter("../tmp/timetable4.jsn")
 index = Index2(netex_timetable, jw)
 index.export()
 

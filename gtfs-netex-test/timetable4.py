@@ -439,7 +439,7 @@ serializer = XmlSerializer(config=serializer_config)
 
 ns_map={'': 'http://www.netex.org.uk/netex', 'gml': 'http://www.opengis.net/gml/3.2'}
 
-with open('/tmp/timetable4.xml', 'w') as out:
+with open('./tmp/timetable4.xml', 'w') as out:
     serializer.write(out, publication_delivery, ns_map)
 
 """
