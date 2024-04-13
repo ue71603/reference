@@ -57,7 +57,7 @@ from timetabledpassingtimesprofile import TimetablePassingTimesProfile
 serializer_config = SerializerConfig(ignore_default_attributes=True)
 serializer_config.pretty_print = True
 serializer_config.ignore_default_attributes = True
-serializer = XmlSerializer(serializer_config)
+serializer = XmlSerializer(config=serializer_config)
 
 ns_map={'': 'http://www.netex.org.uk/netex', 'gml': 'http://www.opengis.net/gml/3.2'}
 
@@ -77,7 +77,7 @@ def conversion(input_filename: str, output_filename: str):
     serializer_config = SerializerConfig(ignore_default_attributes=True)
     serializer_config.pretty_print = True
     serializer_config.ignore_default_attributes = True
-    serializer = XmlSerializer(serializer_config)
+    serializer = XmlSerializer(config=serializer_config)
 
     context = XmlContext()
     config = ParserConfig(fail_on_unknown_properties=False)
@@ -211,7 +211,7 @@ def conversion(input_filename: str, output_filename: str):
         CleanupProfile.firstAndLastStop(journey_pattern)
 
     for line in lines:
-        these_service_journeys = [service_journey for service_journey in service_journeys if service_journey.choice.ref == line.id]
+        these_service_journeys = [service_journey for service_journey in service_journeys if service_journey.flexible_line_ref_or_line_ref_or_line_view_or_flexible_line_view.ref == line.id]
         # timetabledpassingtimesprofile = TimetablePassingTimesProfile(self.codespace, self.version, service_journeys, service_journey_patterns)
         # timetabledpassingtimesprofile.getTimetabledPassingTimes(clean=True)
 

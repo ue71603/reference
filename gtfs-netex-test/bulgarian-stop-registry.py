@@ -6,7 +6,7 @@ import datetime
 
 from netex import StopPlace, StatusEnumeration, MultilingualString, AlternativeNamesRelStructure, AlternativeName, \
     Codespace, NameTypeEnumeration, StopTypeEnumeration, SimplePointVersionStructure, LocationStructure2, Extensions2, \
-    QuaysRelStructure, Quay, PrivateCode, InfoLinksRelStructure, InfoLink, TypeOfInfolinkEnumeration, SiteFrame, \
+    QuaysRelStructure, Quay, PrivateCode, InfoLinksRelStructure, InfoLink, SiteFrame, \
     StopPlacesInFrameRelStructure, PublicationDelivery, DataObjectsRelStructure, CompositeFrame, FramesRelStructure, \
     CodespacesRelStructure, AllVehicleModesOfTransportEnumeration
 from refs import getId
@@ -131,7 +131,7 @@ publication_delivery.data_objects = DataObjectsRelStructure(choice=[site_frame])
 serializer_config = SerializerConfig(ignore_default_attributes=True)
 serializer_config.pretty_print = True
 serializer_config.ignore_default_attributes = True
-serializer = XmlSerializer(serializer_config)
+serializer = XmlSerializer(config=serializer_config)
 
 ns_map = {None: 'http://www.netex.org.uk/netex', 'gml': 'http://www.opengis.net/gml/3.2'}
 

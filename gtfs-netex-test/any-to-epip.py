@@ -21,7 +21,7 @@ def conversion(input_filename: str, output_filename: str):
     serializer_config = SerializerConfig(ignore_default_attributes=True)
     serializer_config.pretty_print = True
     serializer_config.ignore_default_attributes = True
-    serializer = XmlSerializer(serializer_config)
+    serializer = XmlSerializer(config=serializer_config)
 
     context = XmlContext()
     config = ParserConfig(fail_on_unknown_properties=False)
@@ -136,7 +136,7 @@ def conversion(input_filename: str, output_filename: str):
     tree.write(output_filename, pretty_print=True, strip_text=True)
 
 if __name__ == '__main__':
-    for input_filename in glob.glob("netex-output/Flix_*.xml"):
+    for input_filename in glob.glob("/tmp/NeTEx_ARR_NL_20240410_20240411_1416.xml.gz"):
         print(input_filename)
-        output_filename = input_filename.replace('netex-output/', 'netex-output-epip/')
+        output_filename = input_filename.replace('/tmp/', 'netex-output-epip/')
         conversion(input_filename, output_filename)

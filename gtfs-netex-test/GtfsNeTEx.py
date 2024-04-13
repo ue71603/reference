@@ -208,7 +208,7 @@ class GtfsNeTexProfile(CallsProfile):
                             transport_mode=self.gtfsToNeTEx(get_or_none(route_types, i)),
                             presentation=presentation,
                             url=get_or_none(route_urls, i),
-                            authority_ref_or_operator_ref=operator_ref,
+                            operator_ref=operator_ref,
                             public_code=get_or_none(route_short_names, i),
                             private_code=PrivateCode(value=get_or_none(route_ids, i), type_value="route_id")
                             )
@@ -284,11 +284,11 @@ class GtfsNeTexProfile(CallsProfile):
 
                 location = LocationStructure2(longitude=get_or_none(stop_lons, i), latitude=get_or_none(stop_lats, i), srs_name="EPSG:4326")
 
-                stop_areas = None
+                my_stop_areas = None
                 parent_station = get_or_none(parent_stations, i)
                 if parent_station is not None:
                     stop_area_ref = getId(StopArea, self.codespace, parent_station)
-                    stop_areas = StopAreaRefsRelStructure(stop_area_ref=[
+                    my_stop_areas = StopAreaRefsRelStructure(stop_area_ref=[
                         getRef(stop_areas[stop_area_ref], StopAreaRefStructure)])
 
 
@@ -301,7 +301,7 @@ class GtfsNeTexProfile(CallsProfile):
                                                           public_code=get_or_none(stop_codes, i),
                                                           url=get_or_none(stop_urls, i),
                                                           location=location,
-                                                          stop_areas=stop_areas)
+                                                          stop_areas=my_stop_areas)
                 scheduled_stop_points.append(scheduled_stop_point)
 
                 """
@@ -414,7 +414,7 @@ class GtfsNeTexProfile(CallsProfile):
                         prev_route.append(route)
 
                 for route in prev_route:
-                    point_on_route = PointOnRoute(id=getId(PointOnRoute, self.codespace, "{}-{}".format(route_id, shape_pt_sequences[i])), version=self.version.version, order=prev_order, choice_1=getRef(route_point, RoutePointRef)) # shape_pt_sequence is non-negative integer
+                    point_on_route = PointOnRoute(id=getId(PointOnRoute, self.codespace, "{}-{}".format(route_id, shape_pt_sequences[i])), version=self.version.version, order=prev_order, point_ref_or_infrastructure_point_ref_or_activation_point_ref_or_timing_point_ref_or_scheduled_stop_point_ref_or_parking_point_ref_or_relief_point_ref_or_route_point_ref=getRef(route_point, RoutePointRef)) # shape_pt_sequence is non-negative integer
                     route.points_in_sequence.point_on_route.append(point_on_route)
 
                 prev_shape_id = shape_ids[i]
@@ -694,7 +694,7 @@ class GtfsNeTexProfile(CallsProfile):
                             name=MultilingualString(value=trip_headsigns[i]), front_text=MultilingualString(value=trip_headsigns[i])))
 
                 accessibility_assessment = None
-                if wheelchair_accessibles[i] is not None:
+                if wheelchair_accessibles is not None and wheelchair_accessibles[i] is not None:
                     accessibility_assessment = AccessibilityAssessment(id=getId(AccessibilityAssessment, self.codespace, trip_ids[i]),
                                                                        version=self.version.version,
                                                                        mobility_impaired_access=self.wheelchairToNeTEx(wheelchair_accessibles[i]))
@@ -733,7 +733,7 @@ class GtfsNeTexProfile(CallsProfile):
 
                 service_journey = ServiceJourney(id=getId(ServiceJourney, self.codespace, trip_ids[i]),
                                                  version=self.version.version,
-                                                 choice=getFakeRef(getId(Line, self.codespace, route_ids[i]), LineRef, self.version.version),
+                                                 flexible_line_ref_or_line_ref_or_line_view_or_flexible_line_view=getFakeRef(getId(Line, self.codespace, route_ids[i]), LineRef, self.version.version),
                                                  private_code=PrivateCode(value=trip_ids[i], type_value="trip_id"),
                                                  short_name=getOptionalString(get_or_none(trip_short_names, i)),
                                                  validity_conditions_or_valid_between=[ValidityConditionsRelStructure(choice=[getRef(x, AvailabilityConditionRef) for x in availability_conditions_journey if x is not None])],
@@ -814,7 +814,7 @@ class GtfsNeTexProfile(CallsProfile):
     def getTimetableFrame(self, availability_conditions, service_journeys, id="TimetableFrame") -> TimetableFrame:
         timetable_frame = TimetableFrame(id=getId(TimetableFrame, self.codespace, id), version=self.version.version)
 
-        timetable_frame.vehicle_journeys = JourneysInFrameRelStructure(choice=service_journeys)
+        timetable_frame.vehicle_journeys = JourneysInFrameRelStructure(vehicle_journey_or_dated_vehicle_journey_or_normal_dated_vehicle_journey_or_service_journey_or_dated_service_journey_or_dead_run_or_special_service_or_template_service_journey=service_journeys)
         timetable_frame.content_validity_conditions = ValidityConditionsRelStructure(choice=availability_conditions)
 
         return timetable_frame
@@ -849,8 +849,8 @@ class GtfsNeTexProfile(CallsProfile):
         for line in self.lines:
             with open('netex-output/{}.xml'.format(line.id.replace(':', '_')), 'w') as out:
                 operators = self.getOperators({'query': """select distinct agency.* from agency join routes using (agency_id) where route_id = ? ;""", 'parameters': (line.private_code.value,)})
-                stop_areas = self.getStopAreas({'query': """select distinct stops.* from trips join stop_times using (trip_id) join stops using (stop_id) where location_type = 1 and route_id = ? order by stop_id;""", 'parameters': (line.private_code.value,)})
-                scheduled_stop_points = self.getScheduledStopPoints(stop_areas, {'query': """select distinct stops.* from trips join stop_times using (trip_id) join stops using (stop_id) where location_type = 0 or location_type is null and route_id = ? order by stop_id;""", 'parameters': (line.private_code.value,)})
+                stop_areas = self.getStopAreas({'query': """select stops.* from stops where stop_id in (select distinct stops.parent_station from trips join stop_times using (trip_id) join stops using (stop_id) where (location_type = 0 or location_type is null) and parent_station is not null and route_id = ?) order by stop_id;""", 'parameters': (line.private_code.value,)})
+                scheduled_stop_points = self.getScheduledStopPoints(stop_areas, {'query': """select distinct stops.* from trips join stop_times using (trip_id) join stops using (stop_id) where (location_type = 0 or location_type is null) and route_id = ? order by stop_id;""", 'parameters': (line.private_code.value,)})
                 availability_conditions = self.getAvailabilityConditions(availability_condition_sql = {
                     'query': """select distinct calendar.* from trips join calendar using (service_id) where route_id = ? order by service_id;""", 'parameters': (line.private_code.value,)}, exceptions_sql = {
                     'query': """select service_id, exception_type, array_agg(date order by date) as dates from (select calendar_dates.* from trips join calendar_dates using (service_id) where route_id = ?) as x group by service_id, exception_type;""", 'parameters': (line.private_code.value,)})
@@ -890,9 +890,7 @@ if __name__ == '__main__':
     serializer_config = SerializerConfig(ignore_default_attributes=True)
     serializer_config.pretty_print = True
     serializer_config.ignore_default_attributes = True
-    serializer = XmlSerializer(serializer_config)
-
-
+    serializer = XmlSerializer(config=serializer_config)
 
     gtfs = GtfsNeTexProfile(conn=duckdb.connect(database='gtfs2.duckdb', read_only=True), serializer=serializer, full=False)
 

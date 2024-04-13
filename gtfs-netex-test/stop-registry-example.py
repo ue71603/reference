@@ -8,7 +8,7 @@ from xsdata.models.datatype import XmlDateTime
 
 from netex import StopPlace, SimplePointVersionStructure, LocationStructure2, PublicationDelivery, MultilingualString, \
     DataObjectsRelStructure, CompositeFrame, FramesRelStructure, InfrastructureFrame, ServiceFrame, ResourceFrame, \
-    SiteFrame, StopPlacesInFrameRelStructure, Vehicle, VehicleType
+    SiteFrame, StopPlacesInFrameRelStructure, Vehicle, VehicleType, ParticipantRef
 
 
 def transform(stations_csv: str) -> Iterator[StopPlace]:
@@ -28,7 +28,7 @@ composite_frame = CompositeFrame(id="CompositeFrame", version="1", frames=Frames
 
 publication_delivery = PublicationDelivery(
     publication_timestamp=XmlDateTime.now(),
-    participant_ref="StopRegistry",
+    participant_ref=ParticipantRef(value="StopRegistry"),
     description=MultilingualString(value="StopRegistry"),
     data_objects=DataObjectsRelStructure(choice=[composite_frame]),
     version="ntx:1.1",
@@ -37,7 +37,7 @@ publication_delivery = PublicationDelivery(
 serializer_config = SerializerConfig(ignore_default_attributes=True)
 serializer_config.pretty_print = True
 serializer_config.ignore_default_attributes = True
-serializer = XmlSerializer(serializer_config)
+serializer = XmlSerializer(config=serializer_config)
 
 ns_map={'': 'http://www.netex.org.uk/netex', 'gml': 'http://www.opengis.net/gml/3.2'}
 
