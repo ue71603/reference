@@ -33,7 +33,7 @@ from netex import StopArea, ScheduledStopPoint, StopPointInJourneyPattern, Timin
     ValidBetween, Connection, ConnectionEndStructure, TransfersInFrameRelStructure, \
     JourneyInterchangesInFrameRelStructure, ServiceJourneyInterchange, VehicleJourneyRefStructure, ServiceJourneyRef, \
     PublicCodeType, RouteRef, Route, RoutesInFrameRelStructure, TypeOfProductCategoryRef, TypeOfProductCategory, \
-    TypesOfValueInFrameRelStructure
+    TypesOfValueInFrameRelStructure, OperatorView, VersionFrameDefaultsStructure, LocaleStructure
 
 # Missing: BicycleRent
 
@@ -377,16 +377,18 @@ path_links: List[PathLink] = [PathLink(
 """
 
 connections: List[Connection] = [Connection(
-    id="1", version="1",
-    from_value=ConnectionEndStructure(scheduled_stop_point_ref_or_vehicle_meeting_point_ref=ScheduledStopPointRef(ref="1a2", version="1")),
-    to=ConnectionEndStructure(scheduled_stop_point_ref_or_vehicle_meeting_point_ref=ScheduledStopPointRef(ref="1a3", version="1")),
-    transfer_duration=TransferDurationStructure(default_duration=XmlDuration("PT0S"))
-),
+        id="1", version="1",
+        from_value=ConnectionEndStructure(scheduled_stop_point_ref_or_vehicle_meeting_point_ref=ScheduledStopPointRef(ref="1a2", version="1")),
+        to=ConnectionEndStructure(scheduled_stop_point_ref_or_vehicle_meeting_point_ref=ScheduledStopPointRef(ref="1a3", version="1")),
+        transfer_duration=TransferDurationStructure(default_duration=XmlDuration("PT0S")),
+        both_ways=True,
+    ),
     Connection(
         id="2", version="1",
         from_value=ConnectionEndStructure(scheduled_stop_point_ref_or_vehicle_meeting_point_ref=ScheduledStopPointRef(ref="1a4", version="1")),
         to=ConnectionEndStructure(scheduled_stop_point_ref_or_vehicle_meeting_point_ref=ScheduledStopPointRef(ref="1a5", version="1")),
-        transfer_duration=TransferDurationStructure(default_duration=XmlDuration("PT0S"))
+        transfer_duration=TransferDurationStructure(default_duration=XmlDuration("PT0S")),
+        both_ways=True
     )
 ]
 
@@ -423,6 +425,7 @@ timetable_frame = TimetableFrame(
 
 composite_frame: CompositeFrame = CompositeFrame(id="1", version="1",
                                                  validity_conditions_or_valid_between=[ValidBetween(from_date=XmlDateTime.from_string("2014-01-01T00:00:00"), to_date=XmlDateTime.from_string("2014-01-01T00:00:00"))],
+                                                 frame_defaults=VersionFrameDefaultsStructure(default_locale=LocaleStructure(time_zone="Europe/Amsterdam")),
                                                  frames=FramesRelStructure(common_frame=[resource_frame, site_frame, service_frame, timetable_frame]))
 
 publication_delivery: PublicationDelivery = PublicationDelivery(

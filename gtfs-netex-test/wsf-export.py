@@ -1,7 +1,9 @@
 from _decimal import Decimal
 
+import datetime
+import gzip
+
 from xsdata.formats.dataclass.models.generics import AnyElement
-from xsdata.formats.dataclass.parsers.handlers import lxml
 from xsdata.formats.dataclass.serializers import XmlSerializer
 from xsdata.formats.dataclass.serializers.config import SerializerConfig
 from xsdata.models.datatype import XmlDateTime, XmlDuration
@@ -10,10 +12,10 @@ from dutchprofile import DutchProfile
 from netex import Codespace, Version, VersionTypeEnumeration, DataSource, MultilingualString, ResponsibilitySet, \
     ResponsibilityRoleAssignmentsRelStructure, ResponsibilityRoleAssignment, VersionOfObjectRefStructure, Operator, \
     AllModesEnumeration, OrganisationTypeEnumeration, OperatorActivitiesEnumeration, OperationalContext, \
-    AllVehicleModesOfTransportEnumeration, VehicleType, FuelTypeEnumeration, PassengerCapacityStructure, \
+    AllVehicleModesOfTransportEnumeration, VehicleType, FuelTypeEnumeration, \
     FareClassEnumeration, ServiceFacilitySetsRelStructure, ServiceFacilitySet, MobilityFacilityEnumeration, \
-    SanitaryFacilityEnumeration, PassengerCommsFacilityEnumeration, VehicleAccessFacilityEnumeration, \
-    AssistanceFacilityEnumeration, MealFacilityEnumeration, TransportAdministrativeZone, RoutePoint, RouteLink, Route, \
+    SanitaryFacilityEnumeration, VehicleAccessFacilityEnumeration, \
+    TransportAdministrativeZone, RoutePoint, RouteLink, Route, \
     Line, DestinationDisplay, ScheduledStopPoint, StopArea, PassengerStopAssignment, TimingLink, ServiceJourneyPattern, \
     TimeDemandType, TypeOfServiceRef, AccessibilityAssessment, LimitationStatusEnumeration, LocationStructure2, Pos, \
     DirectionTypeEnumeration, PointsOnRouteRelStructure, PointOnRoute, PrivateCode, \
@@ -21,12 +23,11 @@ from netex import Codespace, Version, VersionTypeEnumeration, DataSource, Multil
     ProjectionsRelStructure, PointProjection, StopAreaRefsRelStructure, TopographicPlaceView, \
     PointsInJourneyPatternRelStructure, StopPointInJourneyPattern, JourneyRunTimesRelStructure, JourneyRunTime, \
     TimingLinkRefStructure, PointRefStructure, RoutePointRefStructure, TimingPointRefStructure, LineString, PosList, \
-    PassengerCapacitiesRelStructure, PassengerCapacity, RouteLinkRefStructure, OperatorView, Quay, QuayRef, \
-    ContactStructure, Authority, TypeOfResponsibilityRoleRef, AuthorityRef, OrganisationRefStructure, ServiceJourney, \
-    AlternativeText, MobilityFacilityList, SanitaryFacilityList, TicketingFacilityList, TicketingFacilityEnumeration, \
+    PassengerCapacitiesRelStructure, PassengerCapacity, RouteLinkRefStructure, OperatorView, QuayRef, \
+    ContactStructure, Authority, TypeOfResponsibilityRoleRef, OrganisationRefStructure, ServiceJourney, \
+    MobilityFacilityList, SanitaryFacilityList, \
     TicketingServiceFacilityList, TicketingServiceFacilityEnumeration, VehicleAccessFacilityList, DirectionType, \
     TransportTypeVersionStructure, PublicCodeType
-import datetime
 
 from refs import getId, getRef, getFakeRef
 from simpletimetable import SimpleTimetable
@@ -259,10 +260,10 @@ timing_links = [tl_vb, tl_bv]
 
 stop_assignments=[PassengerStopAssignment(id=getId(PassengerStopAssignment, codespace, "V"), version=version.version, order=1,
                                           fare_scheduled_stop_point_ref_or_scheduled_stop_point_ref_or_scheduled_stop_point=getRef(ssp_v),
-                                          taxi_stand_ref_or_quay_ref_or_quay=getFakeRef("NDOV:NL:Q:76600010", QuayRef, "any")),
+                                          taxi_stand_ref_or_quay_ref_or_quay=getFakeRef("NL:CHB:Quay:76600010", QuayRef, "any")),
                   PassengerStopAssignment(id=getId(PassengerStopAssignment, codespace, "B"), version=version.version, order=1,
                                           fare_scheduled_stop_point_ref_or_scheduled_stop_point_ref_or_scheduled_stop_point=getRef(ssp_b),
-                                          taxi_stand_ref_or_quay_ref_or_quay=getFakeRef("NDOV:NL:Q:79600015", QuayRef, "any"))]
+                                          taxi_stand_ref_or_quay_ref_or_quay=getFakeRef("NL:CHB:Quay:79600015", QuayRef, "any"))]
 
 sjp_dhtx = ServiceJourneyPattern(id=getId(ServiceJourneyPattern, codespace, "V-B"), version=version.version,
                                  route_ref_or_route_view=getRef(route_vb),
@@ -324,17 +325,22 @@ composite_frame = dutchprofile.getCompositeFrame(codespaces=[codespace], version
                                                  resource_frames=resource_frames, service_frames=service_frames, timetable_frames=timetable_frames)
 publication_delivery = dutchprofile.getPublicationDelivery(composite_frame=composite_frame, description="Eerste WSF export")
 
-serializer_config = SerializerConfig(ignore_default_attributes=True)
+serializer_config = SerializerConfig(ignore_default_attributes=True, xml_declaration=True)
 serializer_config.pretty_print = True
 serializer_config.ignore_default_attributes = True
 serializer = XmlSerializer(config=serializer_config)
 
-with open('netex-output/wsf.xml', 'w') as out:
+with open('netex-output/wsf.xml', 'w', encoding='utf-8') as out:
     serializer.write(out, publication_delivery, ns_map)
 
+with open('netex-output/wsf.xml', 'rb') as f_in, gzip.open(f"/tmp/NeTEx_WSF_WSF_{from_date}_{from_date}.xml.gz", 'wb') as f_out:
+    f_out.writelines(f_in)
+
+"""
 parser = lxml.etree.XMLParser(remove_blank_text=True)
 tree = lxml.etree.parse("netex-output/wsf.xml", parser=parser)
 for element in tree.iterfind(".//*"):
     if element.text is None and len(element) == 0 and len(element.attrib.keys()) == 0:
         element.getparent().remove(element)
-tree.write("netex-output/wsf-filter.xml", pretty_print=True, strip_text=True)
+tree.write(f"/tmp/NeTEx_WSF_{from_date}_{from_date}.xml", pretty_print=True, strip_text=True)
+"""
