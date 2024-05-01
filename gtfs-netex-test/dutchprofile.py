@@ -47,7 +47,7 @@ class DutchProfile:
             operational_contexts = OperationalContextsInFrameRelStructure(operational_context=operational_contexts)
 
         if vehicle_types is not None and len(vehicle_types) > 0:
-            vehicle_types = VehicleTypesInFrameRelStructure(compound_train_or_train_or_vehicle_type_or_simple_vehicle_type=vehicle_types)
+            vehicle_types = VehicleTypesInFrameRelStructure(transport_type_dummy_type_or_train_type=vehicle_types)
 
         if zones is not None and len(zones) > 0:
             zones = ZonesInFrameRelStructure(choice=zones)
@@ -55,7 +55,7 @@ class DutchProfile:
         if data_sources is not None or responsibility_sets is not None or organisations is not None or \
                 operational_contexts is not None or vehicle_types is not None or zones is not None:
             resource_frame = ResourceFrame(
-                id=getId(ServiceFrame, self.codespace, id),
+                id=getId(ResourceFrame, self.codespace, id),
                 version=self.version.version,
                 type_of_frame_ref=TypeOfFrameRef(ref="BISON:TypeOfFrame:NL_TT_RESOURCE", version="9.3.0"),
                 data_sources=data_sources,
