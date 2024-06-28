@@ -1,4 +1,5 @@
 from _decimal import Decimal
+import datetime
 from pathlib import Path
 from typing import Dict, List
 
@@ -26,7 +27,9 @@ from netex import PublicationDelivery, GeneralFrame, Codespace, DataSource, Tran
     TopographicPlaceView, ScheduledStopPoint, StopAreaRefsRelStructure, PassengerStopAssignment, QuayRef, OperatorView, \
     Version, ServiceJourney, VehicleTypeRef, ServiceJourneyPattern, RouteRef, DeliveryVariantTypeEnumeration, \
     Extensions2, StopPointInJourneyPattern, DestinationDisplayRef, ProjectionsRelStructure, PointProjection, \
-    PointRefStructure, DirectionType, TransportTypeVersionStructure
+    PointRefStructure, DirectionType, TransportTypeVersionStructure, MobilityFacilityList, PassengerCommsFacilityList, \
+    SanitaryFacilityList, MealFacilityList, AssistanceFacilityList, VehicleAccessFacilityList, PublicCodeStructure, \
+    DatedServiceJourney, TimingLink
 from refs import getId, getRef, getFakeRef
 from timedemandtypesprofile import TimeDemandTypesProfile
 
@@ -57,41 +60,45 @@ transport_administrative_zone = TransportAdministrativeZone(id=getId(TransportAd
                                                             version="any",
                                                             name=MultilingualString(value="Waddenveren Oost"),
                                                             short_name=MultilingualString(value="WPD"),
-                                                            vehicle_modes=[AllModesEnumeration.FERRY])
+                                                            vehicle_modes=[AllModesEnumeration.WATER])
 
 
-authority = Authority(id=getId(Authority, codespace, "Rijk"), version="any", name=MultilingualString(value="Rijksoverheid"), short_name=MultilingualString(value="RIJK"), description=MultilingualString(value="Rijksoverheid"))
+# authority = Authority(id=getId(Authority, codespace, "Rijk"), version="any", name=MultilingualString(value="Rijksoverheid"), short_name=MultilingualString(value="RIJK"), description=MultilingualString(value="Rijksoverheid"))
 
-responsibility_set = ResponsibilitySet(id=getId(ResponsibilitySet, codespace, short_name),
+transport_administrative_zone_partitie = transport_administrative_zone
+
+responsibility_set_financier = ResponsibilitySet(id=getId(ResponsibilitySet, codespace, "Financier"),
                                        version=version.version,
-                                       name=MultilingualString(value=short_name),
+                                       name=MultilingualString(value="Financier"),
                                        roles=ResponsibilityRoleAssignmentsRelStructure(responsibility_role_assignment=[
                                            ResponsibilityRoleAssignment(
-                                               id=getId(ResponsibilityRoleAssignment, codespace, "RIJK"),
+                                               id=getId(ResponsibilityRoleAssignment, codespace, "Financier"),
                                                version=version.version,
-                                               data_role_type=None,
-                                               stakeholder_role_type=None,
                                                type_of_responsibility_role_ref_or_responsibility_role_ref=TypeOfResponsibilityRoleRef(ref="BISON:TypeOfResponsibilityRole:financing", version="any"),
-                                               responsible_organisation_ref=getRef(authority, OrganisationRefStructure)),
-                                           ResponsibilityRoleAssignment(id=getId(ResponsibilityRoleAssignment, codespace, "WPD"),
+                                               responsible_organisation_ref=getRef(operator, OrganisationRefStructure)),
+                                       ]))
+
+responsibility_set_partitie = ResponsibilitySet(id=getId(ResponsibilitySet, codespace, short_name),
+                                       version=version.version,
+                                       name=MultilingualString(value="Partitie"),
+                                       roles=ResponsibilityRoleAssignmentsRelStructure(responsibility_role_assignment=[
+                                           ResponsibilityRoleAssignment(id=getId(ResponsibilityRoleAssignment, codespace, "Partitie"),
                                                                         version=version.version,
-                                                                        data_role_type=None,
-                                                                        stakeholder_role_type=None,
-                                                                        responsible_area_ref=getRef(transport_administrative_zone, VersionOfObjectRefStructure))
+                                                                        responsible_area_ref=getRef(transport_administrative_zone_partitie, VersionOfObjectRefStructure))
                                        ]))
 
 
 operational_context = OperationalContext(id=getId(OperationalContext, codespace, "WATER"), version=version.version,
                                        name=MultilingualString(value="WATER"), short_name=MultilingualString(value="WATER"),
-                                         vehicle_mode=AllVehicleModesOfTransportEnumeration.FERRY)
+                                         vehicle_mode=AllVehicleModesOfTransportEnumeration.WATER)
 
 
 
 vehicle_type_vieroerd = VehicleType(id=getId(VehicleType, codespace, "SIEROERD"), version=version.version,
                            name=MultilingualString(value="Sier en Oerd"),
                            description=MultilingualString(value="Sier en Oerd"),
-                           fuel_type_or_type_of_fuel=TransportTypeVersionStructure.FuelType(value=FuelTypeEnumeration.DIESEL),
-                           capacities=PassengerCapacitiesRelStructure(passenger_capacity_ref_or_passenger_capacity=
+                           fuel_type_or_type_of_fuel=TransportTypeVersionStructure.TypeOfFuel(value=FuelTypeEnumeration.DIESEL),
+                           capacities=PassengerCapacitiesRelStructure(passenger_capacity_ref_or_passenger_capacity_or_passenger_vehicle_capacity=
                                                                       [PassengerCapacity(id=getId(PassengerCapacity, codespace, "SIEROERD"), version=version.version,
                                                                           fare_class=FareClassEnumeration.ANY, total_capacity=1200)]),
                            length=Decimal(value='73.20'), width=Decimal(value='15.90'), height=Decimal(value='5.65'),
@@ -101,30 +108,30 @@ vehicle_type_vieroerd = VehicleType(id=getId(VehicleType, codespace, "SIEROERD")
                            facilities=ServiceFacilitySetsRelStructure(
                                service_facility_set_ref_or_service_facility_set=
                                [ServiceFacilitySet(id=getId(ServiceFacilitySet, codespace, "SIEROERD"), version=version.version,
-                                                   mobility_facility_list=[
-                                                       MobilityFacilityEnumeration.SUITABLE_FOR_WHEELCHAIRS],
-                                                   passenger_comms_facility_list=[
-                                                       PassengerCommsFacilityEnumeration.FREE_WIFI],
-                                                   sanitary_facility_list=[SanitaryFacilityEnumeration.TOILET,
+                                                   mobility_facility_list=MobilityFacilityList(value=[
+                                                       MobilityFacilityEnumeration.SUITABLE_FOR_WHEELCHAIRS]),
+                                                   passenger_comms_facility_list=PassengerCommsFacilityList(value=[
+                                                       PassengerCommsFacilityEnumeration.FREE_WIFI]),
+                                                   sanitary_facility_list=SanitaryFacilityList(value=[SanitaryFacilityEnumeration.TOILET,
                                                                            SanitaryFacilityEnumeration.WHEELCHAIR_ACCESS_TOILET,
-                                                                           SanitaryFacilityEnumeration.BABY_CHANGE],
-                                                   meal_facility_list=[MealFacilityEnumeration.LUNCH,
+                                                                           SanitaryFacilityEnumeration.BABY_CHANGE]),
+                                                   meal_facility_list=MealFacilityList(value=[MealFacilityEnumeration.LUNCH,
                                                                        MealFacilityEnumeration.BREAKFAST,
                                                                        MealFacilityEnumeration.SNACK,
-                                                                       MealFacilityEnumeration.DRINKS],
-                                                   assistance_facility_list=[
-                                                       AssistanceFacilityEnumeration.BOARDING_ASSISTANCE],
-                                                   vehicle_access_facility_list=[
-                                                       VehicleAccessFacilityEnumeration.AUTOMATIC_RAMP]
+                                                                       MealFacilityEnumeration.DRINKS]),
+                                                   assistance_facility_list=AssistanceFacilityList(value=[
+                                                       AssistanceFacilityEnumeration.BOARDING_ASSISTANCE]),
+                                                   vehicle_access_facility_list=VehicleAccessFacilityList(value=[
+                                                       VehicleAccessFacilityEnumeration.AUTOMATIC_RAMP])
                            )]))
 
 vehicle_type_rottummonnik = VehicleType(id=getId(VehicleType, codespace, "ROTTUMMONNIK"), version=version.version,
                            name=MultilingualString(value="Rottum en Monnik"),
                            description=MultilingualString(value="Rottum en Monnik"),
-                           fuel_type_or_type_of_fuel=FuelTypeEnumeration.DIESEL,
+                           fuel_type_or_type_of_fuel=TransportTypeVersionStructure.TypeOfFuel(value=FuelTypeEnumeration.DIESEL),
                            capacities=PassengerCapacitiesRelStructure(passenger_capacity_ref_or_passenger_capacity_or_passenger_vehicle_capacity=
-                                                                      PassengerCapacity(id=getId(PassengerCapacity, codespace, "ROTTUMMONNIK"), version=version.version,
-                                                                          fare_class=FareClassEnumeration.ANY, total_capacity=1000)),
+                                                                      [PassengerCapacity(id=getId(PassengerCapacity, codespace, "ROTTUMMONNIK"), version=version.version,
+                                                                          fare_class=FareClassEnumeration.ANY, total_capacity=1000)]),
                            length=Decimal(value='58'), width=Decimal(value='13.82'), height=Decimal(value='5.45'),
                            transport_mode=AllVehicleModesOfTransportEnumeration.WATER,
                            has_lift_or_ramp=True,
@@ -132,30 +139,30 @@ vehicle_type_rottummonnik = VehicleType(id=getId(VehicleType, codespace, "ROTTUM
                            facilities=ServiceFacilitySetsRelStructure(
                                service_facility_set_ref_or_service_facility_set=
                                [ServiceFacilitySet(id=getId(ServiceFacilitySet, codespace, "ROTTUMMONNIK"), version=version.version,
-                                                   mobility_facility_list=[
-                                                       MobilityFacilityEnumeration.SUITABLE_FOR_WHEELCHAIRS],
-                                                   passenger_comms_facility_list=[
-                                                       PassengerCommsFacilityEnumeration.FREE_WIFI],
-                                                   sanitary_facility_list=[SanitaryFacilityEnumeration.TOILET,
+                                                   mobility_facility_list=MobilityFacilityList(value=[
+                                                       MobilityFacilityEnumeration.SUITABLE_FOR_WHEELCHAIRS]),
+                                                   passenger_comms_facility_list=PassengerCommsFacilityList(value=[
+                                                       PassengerCommsFacilityEnumeration.FREE_WIFI]),
+                                                   sanitary_facility_list=SanitaryFacilityList(value=[SanitaryFacilityEnumeration.TOILET,
                                                                            SanitaryFacilityEnumeration.WHEELCHAIR_ACCESS_TOILET,
-                                                                           SanitaryFacilityEnumeration.BABY_CHANGE],
-                                                   meal_facility_list=[MealFacilityEnumeration.LUNCH,
+                                                                           SanitaryFacilityEnumeration.BABY_CHANGE]),
+                                                   meal_facility_list=MealFacilityList(value=[MealFacilityEnumeration.LUNCH,
                                                                        MealFacilityEnumeration.BREAKFAST,
                                                                        MealFacilityEnumeration.SNACK,
-                                                                       MealFacilityEnumeration.DRINKS],
-                                                   assistance_facility_list=[
-                                                       AssistanceFacilityEnumeration.BOARDING_ASSISTANCE],
-                                                   vehicle_access_facility_list=[
-                                                       VehicleAccessFacilityEnumeration.AUTOMATIC_RAMP]
+                                                                       MealFacilityEnumeration.DRINKS]),
+                                                   assistance_facility_list=AssistanceFacilityList(value=[
+                                                       AssistanceFacilityEnumeration.BOARDING_ASSISTANCE]),
+                                                   vehicle_access_facility_list=VehicleAccessFacilityList(value=[
+                                                       VehicleAccessFacilityEnumeration.AUTOMATIC_RAMP])
                            )]))
 
 vehicle_type_fostaborg = VehicleType(id=getId(VehicleType, codespace, "FOSTABORG"), version=version.version,
                            name=MultilingualString(value="Fostaborg"),
                            description=MultilingualString(value="Fostaborg"),
-                           fuel_type_or_type_of_fuel=FuelTypeEnumeration.DIESEL,
-                           capacities=PassengerCapacitiesRelStructure(passenger_capacity_ref_or_passenger_capacity_or_passenger_vehicle_capacity=
+                           fuel_type_or_type_of_fuel=TransportTypeVersionStructure.TypeOfFuel(value=FuelTypeEnumeration.DIESEL),
+                           capacities=PassengerCapacitiesRelStructure(passenger_capacity_ref_or_passenger_capacity_or_passenger_vehicle_capacity=[
                                                                       PassengerCapacity(id=getId(PassengerCapacity, codespace, "FOSTABORG"), version=version.version,
-                                                                          fare_class=FareClassEnumeration.ANY, total_capacity=48)),
+                                                                          fare_class=FareClassEnumeration.ANY, total_capacity=48)]),
                            length=Decimal(value='21.5'), width=Decimal(value='7.00'),
                            transport_mode=AllVehicleModesOfTransportEnumeration.WATER,
                            has_lift_or_ramp=True,
@@ -163,25 +170,25 @@ vehicle_type_fostaborg = VehicleType(id=getId(VehicleType, codespace, "FOSTABORG
                            facilities=ServiceFacilitySetsRelStructure(
                                service_facility_set_ref_or_service_facility_set=
                                [ServiceFacilitySet(id=getId(ServiceFacilitySet, codespace, "FOSTABORG"), version=version.version,
-                                                   mobility_facility_list=[
-                                                       MobilityFacilityEnumeration.SUITABLE_FOR_WHEELCHAIRS],
-                                                   passenger_comms_facility_list=[
-                                                       PassengerCommsFacilityEnumeration.FREE_WIFI],
-                                                   sanitary_facility_list=[SanitaryFacilityEnumeration.TOILET,
-                                                                           SanitaryFacilityEnumeration.WHEELCHAIR_ACCESS_TOILET],
-                                                   assistance_facility_list=[
-                                                       AssistanceFacilityEnumeration.BOARDING_ASSISTANCE],
-                                                   vehicle_access_facility_list=[
-                                                       VehicleAccessFacilityEnumeration.AUTOMATIC_RAMP]
+                                                   mobility_facility_list=MobilityFacilityList(value=[
+                                                       MobilityFacilityEnumeration.SUITABLE_FOR_WHEELCHAIRS]),
+                                                   passenger_comms_facility_list=PassengerCommsFacilityList(value=[
+                                                       PassengerCommsFacilityEnumeration.FREE_WIFI]),
+                                                   sanitary_facility_list=SanitaryFacilityList(value=[SanitaryFacilityEnumeration.TOILET,
+                                                                           SanitaryFacilityEnumeration.WHEELCHAIR_ACCESS_TOILET]),
+                                                   assistance_facility_list=AssistanceFacilityList(value=[
+                                                       AssistanceFacilityEnumeration.BOARDING_ASSISTANCE]),
+                                                   vehicle_access_facility_list=VehicleAccessFacilityList(value=[
+                                                       VehicleAccessFacilityEnumeration.AUTOMATIC_RAMP])
                            )]))
 
 vehicle_type_esonborg = VehicleType(id=getId(VehicleType, codespace, "ESONBORG"), version=version.version,
                            name=MultilingualString(value="Esonborg"),
                            description=MultilingualString(value="Esonborg"),
-                           fuel_type_or_type_of_fuel=FuelTypeEnumeration.DIESEL,
-                           capacities=PassengerCapacitiesRelStructure(passenger_capacity_ref_or_passenger_capacity_or_passenger_vehicle_capacity=
+                           fuel_type_or_type_of_fuel=TransportTypeVersionStructure.TypeOfFuel(value=FuelTypeEnumeration.DIESEL),
+                           capacities=PassengerCapacitiesRelStructure(passenger_capacity_ref_or_passenger_capacity_or_passenger_vehicle_capacity=[
                                                                       PassengerCapacity(id=getId(PassengerCapacity, codespace, "ESONBORG"), version=version.version,
-                                                                          fare_class=FareClassEnumeration.ANY, total_capacity=48)),
+                                                                          fare_class=FareClassEnumeration.ANY, total_capacity=48)]),
                            length=Decimal(value='22'), width=Decimal(value='6.10'),
                            transport_mode=AllVehicleModesOfTransportEnumeration.WATER,
                            has_lift_or_ramp=True,
@@ -189,22 +196,22 @@ vehicle_type_esonborg = VehicleType(id=getId(VehicleType, codespace, "ESONBORG")
                            facilities=ServiceFacilitySetsRelStructure(
                                service_facility_set_ref_or_service_facility_set=
                                [ServiceFacilitySet(id=getId(ServiceFacilitySet, codespace, "ESONBORG"), version=version.version,
-                                                   mobility_facility_list=[
-                                                       MobilityFacilityEnumeration.SUITABLE_FOR_WHEELCHAIRS],
-                                                   passenger_comms_facility_list=[
-                                                       PassengerCommsFacilityEnumeration.FREE_WIFI],
-                                                   sanitary_facility_list=[SanitaryFacilityEnumeration.TOILET,
-                                                                           SanitaryFacilityEnumeration.WHEELCHAIR_ACCESS_TOILET],
-                                                   assistance_facility_list=[
-                                                       AssistanceFacilityEnumeration.BOARDING_ASSISTANCE],
-                                                   vehicle_access_facility_list=[
-                                                       VehicleAccessFacilityEnumeration.AUTOMATIC_RAMP]
+                                                   mobility_facility_list=MobilityFacilityList(value=[
+                                                       MobilityFacilityEnumeration.SUITABLE_FOR_WHEELCHAIRS]),
+                                                   passenger_comms_facility_list=PassengerCommsFacilityList(value=[
+                                                       PassengerCommsFacilityEnumeration.FREE_WIFI]),
+                                                   sanitary_facility_list=SanitaryFacilityList(value=[SanitaryFacilityEnumeration.TOILET,
+                                                                           SanitaryFacilityEnumeration.WHEELCHAIR_ACCESS_TOILET]),
+                                                   assistance_facility_list=AssistanceFacilityList(value=[
+                                                       AssistanceFacilityEnumeration.BOARDING_ASSISTANCE]),
+                                                   vehicle_access_facility_list=VehicleAccessFacilityList(value=[
+                                                       VehicleAccessFacilityEnumeration.AUTOMATIC_RAMP])
                            )]))
 
 
 dutchprofile = DutchProfile(codespace, data_source, version)
-resource_frames = dutchprofile.getResourceFrames(data_sources=[data_source], responsibility_sets=[responsibility_set],
-                                                 organisations=[operator, authority], operational_contexts=[operational_context],
+resource_frames = dutchprofile.getResourceFrames(data_sources=[data_source], responsibility_sets=[responsibility_set_partitie, responsibility_set_financier],
+                                                 organisations=[operator], operational_contexts=[operational_context],
                                                  vehicle_types=[vehicle_type_rottummonnik,
                                                                 vehicle_type_vieroerd,
                                                                 vehicle_type_esonborg,
@@ -212,11 +219,11 @@ resource_frames = dutchprofile.getResourceFrames(data_sources=[data_source], res
 
 line_ha = Line(id=getId(Line, codespace, "HA"), version=version.version, name=MultilingualString(value="Holwerd - Ameland"),
               monitored=False,
-              responsibility_set_ref_attribute=getId(ResponsibilitySet, codespace, short_name),
+              responsibility_set_ref_attribute=responsibility_set_financier.id,
               description=MultilingualString(value="Veer tussen Holwerd en Ameland"),
               transport_mode=AllVehicleModesOfTransportEnumeration.WATER,
               type_of_service_ref=TypeOfServiceRef(ref="BISON:TypeOfService:Standaard", version="any"),
-              public_code="HA",
+              public_code=PublicCodeStructure(value="HA"),
               private_code=PrivateCode(value="1", type_value="LinePlanningNumber"),
               accessibility_assessment=AccessibilityAssessment(id=getId(AccessibilityAssessment, codespace, "HA"), version=version.version,
                                                                mobility_impaired_access=LimitationStatusEnumeration.TRUE)
@@ -224,11 +231,11 @@ line_ha = Line(id=getId(Line, codespace, "HA"), version=version.version, name=Mu
 
 line_shsa = Line(id=getId(Line, codespace, "SHSA"), version=version.version, name=MultilingualString(value="Holwerd - Ameland (Sneldienst)"),
               monitored=False,
-              responsibility_set_ref_attribute=getId(ResponsibilitySet, codespace, short_name),
+              responsibility_set_ref_attribute=responsibility_set_financier.id,
               description=MultilingualString(value="Veer tussen Holwerd en Ameland (Sneldienst)"),
               transport_mode=AllVehicleModesOfTransportEnumeration.WATER,
               type_of_service_ref=TypeOfServiceRef(ref="BISON:TypeOfService:Standaard", version="any"),
-              public_code="SHSA",
+              public_code=PublicCodeStructure(value="SHSA"),
               private_code=PrivateCode(value="2", type_value="LinePlanningNumber"),
               accessibility_assessment=AccessibilityAssessment(id=getId(AccessibilityAssessment, codespace, "SHSA"), version=version.version,
                                                                mobility_impaired_access=LimitationStatusEnumeration.TRUE)
@@ -236,11 +243,11 @@ line_shsa = Line(id=getId(Line, codespace, "SHSA"), version=version.version, nam
 
 line_ls = Line(id=getId(Line, codespace, "LS"), version=version.version, name=MultilingualString(value="Lauwersoog - Schiermonnikoog"),
               monitored=False,
-              responsibility_set_ref_attribute=getId(ResponsibilitySet, codespace, short_name),
+              responsibility_set_ref_attribute=responsibility_set_financier.id,
               description=MultilingualString(value="Veer tussen Lauwersoog en Schiermonnikoog"),
               transport_mode=AllVehicleModesOfTransportEnumeration.WATER,
               type_of_service_ref=TypeOfServiceRef(ref="BISON:TypeOfService:Standaard", version="any"),
-              public_code="LS",
+              public_code=PublicCodeStructure(value="LS"),
               private_code=PrivateCode(value="3", type_value="LinePlanningNumber"),
               accessibility_assessment=AccessibilityAssessment(id=getId(AccessibilityAssessment, codespace, "LS"), version=version.version,
                                                                mobility_impaired_access=LimitationStatusEnumeration.TRUE)
@@ -248,11 +255,11 @@ line_ls = Line(id=getId(Line, codespace, "LS"), version=version.version, name=Mu
 
 line_slss = Line(id=getId(Line, codespace, "SLSS"), version=version.version, name=MultilingualString(value="Lauwersoog - Schiermonnikoog (Sneldienst)"),
               monitored=False,
-              responsibility_set_ref_attribute=getId(ResponsibilitySet, codespace, short_name),
+              responsibility_set_ref_attribute=responsibility_set_financier.id,
               description=MultilingualString(value="Veer tussen Lauwersoog en Schiermonnikoog (Sneldienst)"),
               transport_mode=AllVehicleModesOfTransportEnumeration.WATER,
               type_of_service_ref=TypeOfServiceRef(ref="BISON:TypeOfService:Standaard", version="any"),
-              public_code="SLSS",
+              public_code=PublicCodeStructure(value="SLSS"),
               private_code=PrivateCode(value="4", type_value="LinePlanningNumber"),
               accessibility_assessment=AccessibilityAssessment(id=getId(AccessibilityAssessment, codespace, "SLSS"), version=version.version,
                                                                mobility_impaired_access=LimitationStatusEnumeration.TRUE)
@@ -301,7 +308,7 @@ route_links = [rl_ha, rl_ah, rl_ls, rl_sl]
 route_hoam = Route(id=getId(Route, codespace, "HOAM"), version=version.version,
                  distance=Decimal('17000'),
                  line_ref=getRef(line_ha),
-                   direction_type=DirectionType(DirectionTypeEnumeration.OUTBOUND),
+                   direction_type=DirectionType(value=DirectionTypeEnumeration.OUTBOUND),
                    points_in_sequence=PointsOnRouteRelStructure(point_on_route=[
                        PointOnRoute(id=getId(PointOnRoute, codespace, "HOAM-H"), version=version.version, order=1, point_ref_or_infrastructure_point_ref_or_activation_point_ref_or_timing_point_ref_or_scheduled_stop_point_ref_or_parking_point_ref_or_relief_point_ref_or_route_point_ref=getRef(rp_h), onward_route_link_ref=getRef(rl_ha, RouteLinkRefStructure)),
                        PointOnRoute(id=getId(PointOnRoute, codespace, "HOAM-A"), version=version.version, order=2, point_ref_or_infrastructure_point_ref_or_activation_point_ref_or_timing_point_ref_or_scheduled_stop_point_ref_or_parking_point_ref_or_relief_point_ref_or_route_point_ref=getRef(rp_a)),
@@ -331,7 +338,7 @@ route_lasc = Route(id=getId(Route, codespace, "LASC"), version=version.version,
 route_scla = Route(id=getId(Route, codespace, "SCLA"), version=version.version,
                  distance=Decimal('12000'),
                  line_ref=getRef(line_ls),
-                   direction_type=DirectionTypeEnumeration.INBOUND,
+                   direction_type=DirectionType(value=DirectionTypeEnumeration.INBOUND),
                    points_in_sequence=PointsOnRouteRelStructure(point_on_route=[
                        PointOnRoute(id=getId(PointOnRoute, codespace, "SCLA-S"), version=version.version, order=1, point_ref_or_infrastructure_point_ref_or_activation_point_ref_or_timing_point_ref_or_scheduled_stop_point_ref_or_parking_point_ref_or_relief_point_ref_or_route_point_ref=getRef(rp_s), onward_route_link_ref=getRef(rl_sl, RouteLinkRefStructure)),
                        PointOnRoute(id=getId(PointOnRoute, codespace, "SCLA-L"), version=version.version, order=2, point_ref_or_infrastructure_point_ref_or_activation_point_ref_or_timing_point_ref_or_scheduled_stop_point_ref_or_parking_point_ref_or_relief_point_ref_or_route_point_ref=getRef(rp_l)),
@@ -341,7 +348,7 @@ route_scla = Route(id=getId(Route, codespace, "SCLA"), version=version.version,
 route_shsa = Route(id=getId(Route, codespace, "SHSA"), version=version.version,
                  distance=Decimal('17000'),
                  line_ref=getRef(line_shsa),
-                   direction_type=DirectionTypeEnumeration.OUTBOUND,
+                   direction_type=DirectionType(value=DirectionTypeEnumeration.OUTBOUND),
                    points_in_sequence=PointsOnRouteRelStructure(point_on_route=[
                        PointOnRoute(id=getId(PointOnRoute, codespace, "SHSA-H"), version=version.version, order=1, point_ref_or_infrastructure_point_ref_or_activation_point_ref_or_timing_point_ref_or_scheduled_stop_point_ref_or_parking_point_ref_or_relief_point_ref_or_route_point_ref=getRef(rp_h), onward_route_link_ref=getRef(rl_ha, RouteLinkRefStructure)),
                        PointOnRoute(id=getId(PointOnRoute, codespace, "SHSA-A"), version=version.version, order=2, point_ref_or_infrastructure_point_ref_or_activation_point_ref_or_timing_point_ref_or_scheduled_stop_point_ref_or_parking_point_ref_or_relief_point_ref_or_route_point_ref=getRef(rp_a)),
@@ -351,7 +358,7 @@ route_shsa = Route(id=getId(Route, codespace, "SHSA"), version=version.version,
 route_sash = Route(id=getId(Route, codespace, "SASH"), version=version.version,
                  distance=Decimal('17000'),
                  line_ref=getRef(line_shsa),
-                   direction_type=DirectionTypeEnumeration.INBOUND,
+                   direction_type=DirectionType(value=DirectionTypeEnumeration.INBOUND),
                    points_in_sequence=PointsOnRouteRelStructure(point_on_route=[
                        PointOnRoute(id=getId(PointOnRoute, codespace, "SASH-H"), version=version.version, order=1, point_ref_or_infrastructure_point_ref_or_activation_point_ref_or_timing_point_ref_or_scheduled_stop_point_ref_or_parking_point_ref_or_relief_point_ref_or_route_point_ref=getRef(rp_a), onward_route_link_ref=getRef(rl_ah, RouteLinkRefStructure)),
                        PointOnRoute(id=getId(PointOnRoute, codespace, "SASH-A"), version=version.version, order=2, point_ref_or_infrastructure_point_ref_or_activation_point_ref_or_timing_point_ref_or_scheduled_stop_point_ref_or_parking_point_ref_or_relief_point_ref_or_route_point_ref=getRef(rp_h)),
@@ -361,7 +368,7 @@ route_sash = Route(id=getId(Route, codespace, "SASH"), version=version.version,
 route_slss = Route(id=getId(Route, codespace, "SLSS"), version=version.version,
                  distance=Decimal('12000'),
                  line_ref=getRef(line_slss),
-                   direction_type=DirectionTypeEnumeration.OUTBOUND,
+                   direction_type=DirectionType(value=DirectionTypeEnumeration.OUTBOUND),
                    points_in_sequence=PointsOnRouteRelStructure(point_on_route=[
                        PointOnRoute(id=getId(PointOnRoute, codespace, "SLSS-L"), version=version.version, order=1, point_ref_or_infrastructure_point_ref_or_activation_point_ref_or_timing_point_ref_or_scheduled_stop_point_ref_or_parking_point_ref_or_relief_point_ref_or_route_point_ref=getRef(rp_l), onward_route_link_ref=getRef(rl_ls, RouteLinkRefStructure)),
                        PointOnRoute(id=getId(PointOnRoute, codespace, "SLSS-S"), version=version.version, order=2, point_ref_or_infrastructure_point_ref_or_activation_point_ref_or_timing_point_ref_or_scheduled_stop_point_ref_or_parking_point_ref_or_relief_point_ref_or_route_point_ref=getRef(rp_s)),
@@ -371,7 +378,7 @@ route_slss = Route(id=getId(Route, codespace, "SLSS"), version=version.version,
 route_sssl = Route(id=getId(Route, codespace, "SSSL"), version=version.version,
                  distance=Decimal('12000'),
                  line_ref=getRef(line_slss),
-                   direction_type=DirectionTypeEnumeration.INBOUND,
+                   direction_type=DirectionType(value=DirectionTypeEnumeration.INBOUND),
                    points_in_sequence=PointsOnRouteRelStructure(point_on_route=[
                        PointOnRoute(id=getId(PointOnRoute, codespace, "SSSL-S"), version=version.version, order=1, point_ref_or_infrastructure_point_ref_or_activation_point_ref_or_timing_point_ref_or_scheduled_stop_point_ref_or_parking_point_ref_or_relief_point_ref_or_route_point_ref=getRef(rp_s), onward_route_link_ref=getRef(rl_sl, RouteLinkRefStructure)),
                        PointOnRoute(id=getId(PointOnRoute, codespace, "SSSL-L"), version=version.version, order=2, point_ref_or_infrastructure_point_ref_or_activation_point_ref_or_timing_point_ref_or_scheduled_stop_point_ref_or_parking_point_ref_or_relief_point_ref_or_route_point_ref=getRef(rp_l)),
@@ -447,7 +454,7 @@ stop_assignments=[PassengerStopAssignment(id=getId(PassengerStopAssignment, code
 
 ssps: Dict[str, ScheduledStopPoint] = {x.id: x for x in general_frame.members.choice if
                                        isinstance(x, ScheduledStopPoint)}
-sjs: List[ServiceJourney] = [x for x in general_frame.members.choice if isinstance(x, ServiceJourney)]
+sjs: List[DatedServiceJourney] = [x for x in general_frame.members.choice if isinstance(x, DatedServiceJourney)]
 sjps = {}
 sjps_hash = {}
 tls = {}
@@ -459,6 +466,7 @@ tdtp = TimeDemandTypesProfile(codespace=codespace, version=version)
 for sj in sjs:
     tdtp.getServiceJourneyPattern(sj, sjps, sjps_hash, ssps, tls)
     tdtp.getTimeDemandType(sj, sjps, tdts, tdts_hash, ssps, tls, None)
+    """
     sj.private_code = PrivateCode(type_value="JourneyNumber", value=str(int(str(sj.departure_time).replace(':', ''))))
     if sj.journey_pattern_ref.ref in ('WPD:ServiceJourneyPattern:AMHO', 'WPD:ServiceJourneyPattern:HOAM'):
         sj.compound_train_ref_or_train_ref_or_vehicle_type_ref = getRef(vehicle_type_vieroerd, VehicleTypeRef)
@@ -468,6 +476,16 @@ for sj in sjs:
         sj.compound_train_ref_or_train_ref_or_vehicle_type_ref = getRef(vehicle_type_fostaborg, VehicleTypeRef)
     elif sj.journey_pattern_ref.ref in ('WPD:ServiceJourneyPattern:SLSS', 'WPD:ServiceJourneyPattern:SSSL'):
         sj.compound_train_ref_or_train_ref_or_vehicle_type_ref = getRef(vehicle_type_esonborg, VehicleTypeRef)
+    """
+
+for tl in tls.values():
+    tl: TimingLink
+    f = tl.from_point_ref.ref.split(':')[-1]
+    t = tl.to_point_ref.ref.split(':')[-1]
+    for rl in route_links:
+        if rl.from_point_ref.ref.endswith(':' + f) and rl.to_point_ref.ref.endswith(':' + t):
+            tl.distance = rl.distance
+            tl.operational_context_ref = rl.operational_context_ref
 
 def setVariants(dd: DestinationDisplay):
     dd.variants = DestinationDisplayVariantsRelStructure(destination_display_variant=[DestinationDisplayVariant(id=dd.id + "-" + str(x), version=dd.version, name=MultilingualString(value=dd.name.value[0:x]), destination_display_variant_media_type=DeliveryVariantTypeEnumeration.ANY, extensions=Extensions2(any_element=[AnyElement(qname="{http://www.netex.org.uk/netex}MaxLength", text="BISON:DisplayTextLength:"+str(x))])) for x in (24, 21, 19, 16)])
@@ -519,10 +537,29 @@ service_frames = dutchprofile.getServiceFrames(route_points=list(route_points.va
                                                service_journey_patterns=list(sjps.values()), time_demand_types=list(tdts.values()),
                                               notices=None, notice_assignments=None)
 
+sjp_idx = ['WPD:ServiceJourneyPattern:AMHO', 'WPD:ServiceJourneyPattern:HOAM',
+ 'WPD:ServiceJourneyPattern:LASC', 'WPD:ServiceJourneyPattern:SCLA',
+ 'WPD:ServiceJourneyPattern:SASH', 'WPD:ServiceJourneyPattern:SHSA',
+ 'WPD:ServiceJourneyPattern:SLSS', 'WPD:ServiceJourneyPattern:SSSL']
+
+for sj in service_journeys:
+    sjp_no = sjp_idx.index(sj.journey_pattern_ref.ref) + 1
+    private_code = "{:d}{}".format(sjp_no, "{:04d}".format(int(str(sj.departure_time).replace(':', '')[0:4])))
+
+    sj.private_code = PrivateCode(type_value="JourneyNumber", value=private_code)
+    if sj.journey_pattern_ref.ref in ('WPD:ServiceJourneyPattern:AMHO', 'WPD:ServiceJourneyPattern:HOAM'):
+        sj.vehicle_type_ref_or_train_ref = getRef(vehicle_type_vieroerd, VehicleTypeRef)
+    elif sj.journey_pattern_ref.ref in ('WPD:ServiceJourneyPattern:LASC', 'WPD:ServiceJourneyPattern:SCLA'):
+        sj.vehicle_type_ref_or_train_ref = getRef(vehicle_type_rottummonnik, VehicleTypeRef)
+    elif sj.journey_pattern_ref.ref in ('WPD:ServiceJourneyPattern:SASH', 'WPD:ServiceJourneyPattern:SHSA'):
+        sj.vehicle_type_ref_or_train_ref = getRef(vehicle_type_fostaborg, VehicleTypeRef)
+    elif sj.journey_pattern_ref.ref in ('WPD:ServiceJourneyPattern:SLSS', 'WPD:ServiceJourneyPattern:SSSL'):
+        sj.vehicle_type_ref_or_train_ref = getRef(vehicle_type_esonborg, VehicleTypeRef)
+
 timetable_frames = dutchprofile.getTimetableFrame(content_validity_conditions=availability_conditions, operator_view=OperatorView(operator_ref=getRef(operator)), vehicle_journeys=service_journeys)
 
 composite_frame = dutchprofile.getCompositeFrame(codespaces=[dova_codespace, codespace], versions=[version],
-                                                 responsibility_set=responsibility_set,
+                                                 responsibility_set=responsibility_set_partitie,
                                                  resource_frames=resource_frames, service_frames=service_frames, timetable_frames=timetable_frames)
 publication_delivery = dutchprofile.getPublicationDelivery(composite_frame=composite_frame, description="Eerste WPD export")
 
@@ -531,6 +568,7 @@ serializer_config.pretty_print = True
 serializer_config.ignore_default_attributes = True
 serializer = XmlSerializer(config=serializer_config)
 
+"""
 with open('netex-output/wpd.xml', 'w') as out:
     serializer.write(out, publication_delivery, ns_map)
 
@@ -540,3 +578,11 @@ for element in tree.iterfind(".//*"):
     if element.text is None and len(element) == 0 and len(element.attrib.keys()) == 0:
         element.getparent().remove(element)
 tree.write("netex-output/wpd-filter.xml", pretty_print=True, strip_text=True)
+"""
+
+from_date = datetime.date.today().isoformat().replace('-', '')
+
+from isal import igzip_threaded
+ns_map = {'': 'http://www.netex.org.uk/netex', 'gml': 'http://www.opengis.net/gml/3.2'}
+with igzip_threaded.open(f"/tmp/NeTEx_WPD_WPD_{from_date}_{from_date}.xml.gz", 'wt', compresslevel=3, threads=3, block_size=2*10**8) as out:
+    serializer.write(out, publication_delivery, ns_map)

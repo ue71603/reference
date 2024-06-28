@@ -45,8 +45,10 @@ dova_codespace = Codespace(id="{}:Codespace:{}".format("BISON", "DOVA"), xmlns="
 start_date = datetime.datetime(year=2023, month=11, day=29)
 end_date = datetime.datetime(year=2023, month=12, day=29)
 
-version = Version(id=getId(Version, codespace, str(1)),
-                  version=str(1),
+today = str(datetime.date.today()).replace('-', '')
+
+version = Version(id=getId(Version, codespace, today),
+                  version=today,
                   start_date=XmlDateTime.from_datetime(start_date),
                   end_date=XmlDateTime.from_datetime(end_date),
                   version_type=VersionTypeEnumeration.BASELINE)
@@ -70,6 +72,13 @@ transport_administrative_zone = TransportAdministrativeZone(id=getId(TransportAd
                                                             short_name=MultilingualString(value="FFVB"),
                                                             vehicle_modes=[AllModesEnumeration.WATER])
 
+transport_administrative_zone_partitie = TransportAdministrativeZone(id=getId(TransportAdministrativeZone, codespace, "WSF"),
+                                                            version="any",
+                                                            name=MultilingualString(value="Westerschelde Ferry"),
+                                                            short_name=MultilingualString(value="WSF"),
+                                                            vehicle_modes=[AllModesEnumeration.WATER])
+
+
 operator = Operator(id=getId(Operator, codespace, "WSF"), version=version.version,
                         company_number="61547336",
                         name=MultilingualString(value="WSF"),
@@ -83,18 +92,33 @@ operator = Operator(id=getId(Operator, codespace, "WSF"), version=version.versio
 
 authority = Authority(id=getId(Authority, dova_codespace, "ZLD"), version="any", name=MultilingualString(value="Zeeland"), short_name=MultilingualString(value="ZLD"), description=MultilingualString(value="Provincie Zeeland"))
 
-responsibility_set = ResponsibilitySet(id=getId(ResponsibilitySet, codespace, short_name),
+responsibility_set_concessie = ResponsibilitySet(id=getId(ResponsibilitySet, codespace, "Concessie"),
                                        version=version.version,
-                                       name=MultilingualString(value=short_name),
+                                       name=MultilingualString(value="Concessie"),
+                                       roles=ResponsibilityRoleAssignmentsRelStructure(responsibility_role_assignment=[
+                                           ResponsibilityRoleAssignment(id=getId(ResponsibilityRoleAssignment, codespace, "Concessie"),
+                                                                        version=version.version,
+                                                                        responsible_area_ref=getRef(transport_administrative_zone, VersionOfObjectRefStructure))
+                                       ]))
+
+responsibility_set_financier = ResponsibilitySet(id=getId(ResponsibilitySet, codespace, "Financier"),
+                                       version=version.version,
+                                       name=MultilingualString(value="Financier"),
                                        roles=ResponsibilityRoleAssignmentsRelStructure(responsibility_role_assignment=[
                                            ResponsibilityRoleAssignment(
-                                               id=getId(ResponsibilityRoleAssignment, codespace, "ZLD"),
+                                               id=getId(ResponsibilityRoleAssignment, codespace, "Financier"),
                                                version=version.version,
                                                type_of_responsibility_role_ref_or_responsibility_role_ref=TypeOfResponsibilityRoleRef(ref="BISON:TypeOfResponsibilityRole:financing", version="any"),
                                                responsible_organisation_ref=getRef(authority, OrganisationRefStructure)),
-                                           ResponsibilityRoleAssignment(id=getId(ResponsibilityRoleAssignment, codespace, "FFVB"),
+                                       ]))
+
+responsibility_set_partitie = ResponsibilitySet(id=getId(ResponsibilitySet, codespace, short_name),
+                                       version=version.version,
+                                       name=MultilingualString(value="Partitie"),
+                                       roles=ResponsibilityRoleAssignmentsRelStructure(responsibility_role_assignment=[
+                                           ResponsibilityRoleAssignment(id=getId(ResponsibilityRoleAssignment, codespace, "Partitie"),
                                                                         version=version.version,
-                                                                        responsible_area_ref=getRef(transport_administrative_zone, VersionOfObjectRefStructure))
+                                                                        responsible_area_ref=getRef(transport_administrative_zone_partitie, VersionOfObjectRefStructure))
                                        ]))
 
 
@@ -105,7 +129,8 @@ operational_context = OperationalContext(id=getId(OperationalContext, codespace,
 vehicle_type = VehicleType(id=getId(VehicleType, codespace, "PMPWA"), version=version.version,
                            name=MultilingualString(value="Prinses Maxima en Prins Willem Alexander"),
                            description=MultilingualString(value="Prinses Maxima en Prins Willem Alexander"),
-                           fuel_type_or_type_of_fuel=TransportTypeVersionStructure.FuelType(value=[FuelTypeEnumeration.DIESEL]),
+                           # fuel_type_or_type_of_fuel=TransportTypeVersionStructure.FuelType(value=[FuelTypeEnumeration.DIESEL]),
+                           fuel_type_or_type_of_fuel=TransportTypeVersionStructure.TypeOfFuel(value=FuelTypeEnumeration.DIESEL),
                            capacities=PassengerCapacitiesRelStructure(passenger_capacity_ref_or_passenger_capacity_or_passenger_vehicle_capacity=
                                                                       [PassengerCapacity(id=getId(PassengerCapacity, codespace, "PMPWA"), version=version.version,
                                                                           fare_class=FareClassEnumeration.ANY, total_capacity=186, seating_capacity=186)]),
@@ -128,13 +153,13 @@ for sj in service_journeys:
     sj.compound_train_ref_or_train_ref_or_vehicle_type_ref = getRef(vehicle_type)
 
 dutchprofile = DutchProfile(codespace, data_source, version)
-resource_frames = dutchprofile.getResourceFrames(data_sources=[data_source], responsibility_sets=[responsibility_set],
+resource_frames = dutchprofile.getResourceFrames(data_sources=[data_source], responsibility_sets=[responsibility_set_concessie, responsibility_set_financier, responsibility_set_partitie],
                                                  organisations=[operator, authority], operational_contexts=[operational_context],
-                                                 vehicle_types=[vehicle_type], zones=[transport_administrative_zone])
+                                                 vehicle_types=[vehicle_type], zones=[transport_administrative_zone_partitie])
 
 line = Line(id=getId(Line, codespace, "WSF"), version=version.version, name=MultilingualString(value="WSF"),
               monitored=False,
-              responsibility_set_ref_attribute=getId(ResponsibilitySet, codespace, short_name),
+              responsibility_set_ref_attribute=responsibility_set_concessie.id,
               description=MultilingualString(value="Veer tussen Vlissingen en Breskens"),
               transport_mode=AllVehicleModesOfTransportEnumeration.WATER,
               type_of_service_ref=TypeOfServiceRef(ref="BISON:TypeOfService:Standaard", version="any"),
@@ -214,7 +239,7 @@ sa_v = StopArea(id=getId(StopArea, codespace, "V"),
                  version=version.version,
                  name=MultilingualString(value="Vlissingen"),
                  private_code=PrivateCode(value="1", type_value="UserStopAreaCode"),
-                 topographic_place_ref_or_topographic_place_view=TopographicPlaceView(name=MultilingualString(value="Breskens"))
+                 topographic_place_ref_or_topographic_place_view=TopographicPlaceView(name=MultilingualString(value="Vlissingen"))
                  )
 
 sa_b = StopArea(id=getId(StopArea, codespace, "B"),
@@ -321,7 +346,7 @@ service_frames = dutchprofile.getServiceFrames(route_points=route_points, route_
 timetable_frames = dutchprofile.getTimetableFrame(content_validity_conditions=availability_conditions, operator_view=OperatorView(operator_ref=getRef(operator)), vehicle_journeys=service_journeys)
 
 composite_frame = dutchprofile.getCompositeFrame(codespaces=[codespace], versions=[version],
-                                                 responsibility_set=responsibility_set,
+                                                 responsibility_set=responsibility_set_partitie,
                                                  resource_frames=resource_frames, service_frames=service_frames, timetable_frames=timetable_frames)
 publication_delivery = dutchprofile.getPublicationDelivery(composite_frame=composite_frame, description="Eerste WSF export")
 
@@ -330,11 +355,18 @@ serializer_config.pretty_print = True
 serializer_config.ignore_default_attributes = True
 serializer = XmlSerializer(config=serializer_config)
 
-with open('netex-output/wsf.xml', 'w', encoding='utf-8') as out:
+from isal import igzip_threaded
+import gzip
+ns_map = {'': 'http://www.netex.org.uk/netex', 'gml': 'http://www.opengis.net/gml/3.2'}
+with igzip_threaded.open(f"/tmp/NeTEx_WSF_WSF_{from_date}_{from_date}.xml.gz", 'wt', compresslevel=3, threads=3, block_size=2*10**8) as out:
     serializer.write(out, publication_delivery, ns_map)
 
-with open('netex-output/wsf.xml', 'rb') as f_in, gzip.open(f"/tmp/NeTEx_WSF_WSF_{from_date}_{from_date}.xml.gz", 'wb') as f_out:
-    f_out.writelines(f_in)
+
+# with open('netex-output/wsf.xml', 'w', encoding='utf-8') as out:
+#    serializer.write(out, publication_delivery, ns_map)
+
+# with open('netex-output/wsf.xml', 'rb') as f_in, gzip.open(f"/tmp/NeTEx_WSF_WSF_{from_date}_{from_date}.xml.gz", 'wb') as f_out:
+#   f_out.writelines(f_in)
 
 """
 parser = lxml.etree.XMLParser(remove_blank_text=True)
