@@ -1,11 +1,26 @@
-# Import files in DuckDB
+# Dependencies
+```
+pip install --upgrade pip
+pip install -r requirements.txt
+xsdata generate -c netex.conf /home/skinkie/Sources/NeTEx/xsd/NeTEx_publication.xsd
+```
 
-CREATE TABLE agency AS SELECT * FROM read_csv('/tmp/eu/agency.txt', delim=',', header=true, auto_detect=true);
-CREATE TABLE calendar_dates AS SELECT * FROM read_csv('/tmp/eu/calendar_dates.txt', delim=',', header=true, auto_detect=true);
-CREATE TABLE calendar AS SELECT * FROM read_csv('/tmp/eu/calendar.txt', delim=',', header=true, auto_detect=true);
-CREATE TABLE routes AS SELECT * FROM read_csv('/tmp/eu/routes.txt', delim=',', header=true, auto_detect=true);
-CREATE TABLE stops AS SELECT * FROM read_csv('/tmp/eu/stops.txt', delim=',', header=true, auto_detect=true);
-CREATE TABLE shapes AS SELECT * FROM read_csv('/tmp/eu/shapes.txt', delim=',', header=true, auto_detect=true);
-CREATE TABLE trips AS SELECT * FROM read_csv('/tmp/eu/trips.txt', delim=',', header=true, auto_detect=true);
-CREATE TABLE transfers AS SELECT * FROM read_csv('/tmp/eu/transfers.txt', delim=',', header=true, auto_detect=true);
-CREATE TABLE stop_times AS SELECT * FROM read_csv('/tmp/eu/stop_times.txt', delim=',', header=true, auto_detect=true);
+Currently regeneration of NeTEx must be done with the original xsData version, because Iterable does not work while parsing. 
+
+# Generating Python classes from XML Schema
+`xsdata generate -c netex.conf /path/to/NeTEx/xsd/NeTEx_publication.xsd`
+
+# Importing GTFS
+`python gtfs_import_to_db.py /path/to/gtfs.zip /path/to/gtfs-import.duckdb`
+
+# Conversion of GTFS to NeTEx intermediate
+`python gtfs_convert_to_db.py /path/to/gtfs-import.duckdb /path/to/netex-import.duckdb`
+
+# Transformation of NeTEx towards EPIP
+`python epip_db_to_db.py /path/to/netex-import.duckdb /path/to/netex-import-epip.duckdb`
+
+# Conversion of NeTEx EPIP database to XML
+`python epip_db_to_xml.py /path/to/netex-import.duckdb /path/to/netex-import-epip.duckdb /path/to/netex.xml.gz`
+
+# Import a Swiss NeTEx ZIP file
+`python swiss_to_db.py /path/to/swiss-netex-file.zip /path/to/swiss-import.duckdb`
