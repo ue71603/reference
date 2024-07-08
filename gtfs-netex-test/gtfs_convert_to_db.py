@@ -372,7 +372,7 @@ class GtfsNeTexProfile(CallsProfile):
                                            private_code=PrivateCode(value=stop_ids[i], type_value="stop_id"),
                                            locale=Locale(time_zone=stop_timezones[i]) if stop_timezones[i] is not None else None,
                                            parent_zone_ref=ZoneRefStructure(ref=zone_ids[i], version_ref="EXTERNAL") if zone_ids[i] is not None else None,
-                                           accessibility_assessment=AccessibilityAssessment(id=getId(StopPlace, self.codespace, stop_ids[i]),
+                                           accessibility_assessment=AccessibilityAssessment(id=getId(AccessibilityAssessment, self.codespace, 'StopPlace_' + stop_ids[i]),
                                                                                             version=self.version.version,
                                                                                             mobility_impaired_access=self.wheelchairToNeTEx(wheelchair_boardings[i])) if wheelchair_boardings[i] is not None else None,
                                            info_links=InfoLinksRelStructure(info_link=[InfoLink(type_of_info_link=[TypeOfInfoLinkEnumeration.RESOURCE], value=stop_urls[i])]) if stop_urls[i] is not None else None,
@@ -401,7 +401,7 @@ class GtfsNeTexProfile(CallsProfile):
                                 description=getOptionalString(get_or_none(stop_descs, i)),
                                 private_code=PrivateCode(value=stop_ids[i], type_value="stop_id"),
                                 parent_zone_ref=ZoneRefStructure(ref=zone_ids[i], version_ref="EXTERNAL") if zone_ids[i] is not None else None,
-                                accessibility_assessment=AccessibilityAssessment(id=getId(StopPlace, self.codespace, stop_ids[i]), version=self.version.version,
+                                accessibility_assessment=AccessibilityAssessment(id=getId(AccessibilityAssessment, self.codespace, stop_ids[i]), version=self.version.version,
                                                                                  mobility_impaired_access=self.wheelchairToNeTEx(wheelchair_boardings[i])) if wheelchair_boardings[i] is not None else None,
                                 info_links=InfoLinksRelStructure(info_link=[InfoLink(type_of_info_link=[TypeOfInfoLinkEnumeration.RESOURCE], value=stop_urls[i])]) if stop_urls[i] is not None else None,
                                 centroid=SimplePointVersionStructure(location=
@@ -433,7 +433,7 @@ class GtfsNeTexProfile(CallsProfile):
                                            description=getOptionalString(get_or_none(stop_descs, i)),
                                            private_code=PrivateCode(value=stop_ids[i], type_value="stop_id"),
                                            parent_zone_ref=ZoneRefStructure(ref=zone_ids[i], version_ref="EXTERNAL") if zone_ids[i] is not None else None,
-                                           accessibility_assessment=AccessibilityAssessment(id=getId(StopPlace, self.codespace, stop_ids[i]),
+                                           accessibility_assessment=AccessibilityAssessment(id=getId(AccessibilityAssessment, self.codespace, stop_ids[i]),
                                                                                             version=self.version.version,
                                                                                             mobility_impaired_access=self.wheelchairToNeTEx(wheelchair_boardings[i])) if wheelchair_boardings[i] is not None else None,
                                            info_links=InfoLinksRelStructure(info_link=[InfoLink(type_of_info_link=[TypeOfInfoLinkEnumeration.RESOURCE], value=stop_urls[i])]) if stop_urls[i] is not None else None,
@@ -457,7 +457,7 @@ class GtfsNeTexProfile(CallsProfile):
                                            description=getOptionalString(get_or_none(stop_descs, i)),
                                            private_code=PrivateCode(value=stop_ids[i], type_value="stop_id"),
                                            parent_zone_ref=ZoneRefStructure(ref=zone_ids[i], version_ref="EXTERNAL") if zone_ids[i] is not None else None,
-                                           accessibility_assessment=AccessibilityAssessment(id=getId(StopPlace, self.codespace, stop_ids[i]),
+                                           accessibility_assessment=AccessibilityAssessment(id=getId(AccessibilityAssessment, self.codespace, stop_ids[i]),
                                                                                             version=self.version.version,
                                                                                             mobility_impaired_access=self.wheelchairToNeTEx(wheelchair_boardings[i])) if wheelchair_boardings[i] is not None else None,
                                            info_links=InfoLinksRelStructure(info_link=[InfoLink(type_of_info_link=[TypeOfInfoLinkEnumeration.RESOURCE], value=stop_urls[i])]) if stop_urls[i] is not None else None,
@@ -1064,35 +1064,35 @@ class GtfsNeTexProfile(CallsProfile):
                     pickup_types = df2.get('pickup_type')
                     stop_sequences = df2.get('stop_sequence')
 
-                    for i in range(0, len(stop_ids)):
+                    for index_j in range(0, len(stop_ids)):
                         destination_display_view = None
-                        stop_headsign = get_or_none(stop_headsigns, i)
+                        stop_headsign = get_or_none(stop_headsigns, index_j)
                         if stop_headsign is not None:
                             destination_display_view = DestinationDisplayView(
                                 name=MultilingualString(value=stop_headsign),
                                 front_text=MultilingualString(value=stop_headsign))
 
-                        from_point_ref = getId(ScheduledStopPoint, self.codespace, stop_ids[i])
-                        arrival_time, arrival_dayoffset = self.noonTimeToNeTEx(arrival_times[i])
-                        departure_time, departure_dayoffset = self.noonTimeToNeTEx(departure_times[i])
+                        from_point_ref = getId(ScheduledStopPoint, self.codespace, stop_ids[index_j])
+                        arrival_time, arrival_dayoffset = self.noonTimeToNeTEx(arrival_times[index_j])
+                        departure_time, departure_dayoffset = self.noonTimeToNeTEx(departure_times[index_j])
 
-                        shape_dist_traveled = get_or_none(shape_dist_traveleds, i)
+                        shape_dist_traveled = get_or_none(shape_dist_traveleds, index_j)
                         if prev_call and shape_dist_traveled:
                             distance = shape_dist_traveled - prev_shape_traveled
                             prev_call.onward_service_link_view = OnwardServiceLinkView(distance=distance)
 
-                        call = Call(id=getId(Call, self.codespace, "{}_{}".format(trip_ids[i], stop_sequences[i])),
+                        call = Call(id=getId(Call, self.codespace, "{}_{}".format(trip_ids[i], stop_sequences[index_j])),
                                     version=self.version.version,
                                     fare_scheduled_stop_point_ref_or_scheduled_stop_point_ref_or_scheduled_stop_point_view=getFakeRef(
                                         from_point_ref, ScheduledStopPointRef, self.version.version),
                                     destination_display_ref_or_destination_display_view=destination_display_view,
                                     arrival=ArrivalStructure(time=arrival_time, day_offset=arrival_dayoffset,
-                                                             for_alighting=bool(drop_off_types[i] != 1)),
+                                                             for_alighting=bool(drop_off_types[index_j] != 1)),
                                     departure=DepartureStructure(time=departure_time, day_offset=departure_dayoffset,
-                                                                 for_boarding=bool(pickup_types[i] != 1)),
+                                                                 for_boarding=bool(pickup_types[index_j] != 1)),
                                     request_stop=bool(
-                                        pickup_types[i] == 2 or pickup_types[i] == 3 or drop_off_types[i] == 2 or
-                                        drop_off_types[i] == 3),
+                                        pickup_types[index_j] == 2 or pickup_types[index_j] == 3 or drop_off_types[index_j] == 2 or
+                                        drop_off_types[index_j] == 3),
                                     order=prev_order)  # stop_sequence is non-negative integer
 
                         calls.call.append(call)
