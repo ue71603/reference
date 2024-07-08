@@ -26,9 +26,9 @@ def main(file: str):
     element_names = get_element_names(rt)
 
     # Print the list of element names
-    print("All element types found:")
-    for name in element_names:
-        print(name)
+    #print("All element types found:")
+    #for name in element_names:
+    #    print(name)
     print("***************************************************")
 
     for el in elementlist:
