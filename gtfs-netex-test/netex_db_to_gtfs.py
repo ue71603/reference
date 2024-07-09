@@ -30,7 +30,7 @@ import csv
 import zipfile
 
 
-def convert(archive, database: str, gtfs: str):
+def convert(archive, database: str):
     agencies = {}
     used_agencies = set([])
     routes = {}
@@ -140,4 +140,4 @@ if __name__ == '__main__':
     args = argument_parser.parse_args()
 
     with zipfile.ZipFile(args.gtfs, 'w') as archive:
-        convert(archive, args.netex, args.gtfs)
+        convert(archive, args.netex)
