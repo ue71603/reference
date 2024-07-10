@@ -12,12 +12,14 @@ ns_map = {'': 'http://www.netex.org.uk/netex', 'gml': 'http://www.opengis.net/gm
 context = XmlContext()
 config = ParserConfig(fail_on_unknown_properties=False)
 parser = XmlParser(context=context, config=config, handler=LxmlEventHandler)
+parser.encoding='utf-8'
 
 serializer_config = SerializerConfig(ignore_default_attributes=True)
 serializer_config.indent = None
 serializer_config.xml_declaration = False
 serializer_config.ignore_default_attributes = True
 serializer = XmlSerializer(config=serializer_config)
+serializer.encoding='utf-8'
 
 def load_local(con, clazz: T, limit=None, filter=None) -> List[T]:
     type = getattr(clazz.Meta, 'name', clazz.__name__)

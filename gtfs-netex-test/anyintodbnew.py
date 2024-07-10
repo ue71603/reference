@@ -90,7 +90,7 @@ def insert_database(con, classes, f=None):
     for event, element in context:
         if event == 'end' and element.tag in interesting_element_names: # https://stackoverflow.com/questions/65935392/why-does-elementtree-iterparse-sometimes-retrieve-xml-elements-incompletely
             # current_element = element.tag
-            xml = etree.tostring(element)
+            xml = etree.tostring(element,encoding='unicode')
             if 'id' not in element.attrib:
                 # print(xml)
                 continue
@@ -134,14 +134,14 @@ def insert_database(con, classes, f=None):
 
 def open_netex_file(filename):
     if filename.endswith('.xml.gz'):
-        yield igzip_threaded.open(filename, 'rb', compresslevel=3, threads=3)
+        yield igzip_threaded.open(filename, 'rb', compresslevel=3, threads=3, encoding='utf-8')
     elif filename.endswith('.xml'):
-        yield open(filename, 'rb')
+        yield open(filename, 'rb', encoding='utf-8')
     elif filename.endswith('.zip'):
         import zipfile
         zip = zipfile.ZipFile(filename)
         for zipfilename in zip.filelist:
-            yield zip.open(zipfilename)
+            yield zip.open(zipfilename, encoding='utf-8')
 
 if __name__ == "__main__":
     filenames = ['/home/netex/NeTEx_ARR_NL_20240516_20240517_1418.xml.gz', '/home/netex/NeTEx_DOVA_epiap_20240517013000.xml.gz']
