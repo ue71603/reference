@@ -11,7 +11,7 @@ import lxml
 import hashlib
 
 from callsprofile import CallsProfile
-from dbaccess import load_local, load_generator
+from netexio.dbaccess import load_local, load_generator
 from gtfsprofile import GtfsProfile
 from netex import Line, StopPlace, Codespace, ScheduledStopPoint, LocationStructure2, PassengerStopAssignment, \
     Authority, Operator, Branding, UicOperatingPeriod, DayTypeAssignment, ServiceJourney, ServiceJourneyPattern, \
@@ -80,7 +80,13 @@ def convert(archive, database: str):
 
         for scheduled_stop_point in load_local(con, ScheduledStopPoint):
             stop_place = psas.get(scheduled_stop_point.id, None)
-            stop_place_ref = getRef(stop_place)
+            if stop_place is not None:
+                stop_place_ref = getRef(stop_place)
+                stop = GtfsProfile.projectStopPlaceToStop(stop_place)
+                stops[stop['stop_id']] = stop
+            else:
+                stop_place_ref = None
+
             stop = GtfsProfile.projectScheduledStopPointToStop(scheduled_stop_point, stop_place_ref)
             if stop is not None:
                 stops[stop['stop_id']] = stop
@@ -114,10 +120,24 @@ def convert(archive, database: str):
         # TODO: maybe do this per trip?
         GtfsProfile.writeToZipFile(archive,'trips.txt', trips, write_header=True)
         GtfsProfile.writeToZipFile(archive,'stop_times.txt', stop_times, write_header=True)
+        trips = stop_times = None
 
         GtfsProfile.writeToZipFile(archive,'routes.txt', list(routes.values()), write_header=True)
         GtfsProfile.writeToZipFile(archive,'agency.txt', [y for x, y in agencies.items() if x in used_agencies], write_header=True)
         GtfsProfile.writeToZipFile(archive,'stops.txt', list(stops.values()), write_header=True)
+        routes = agency = stops = None
+
+        for uic_operating_period in load_generator(con, UicOperatingPeriod):
+            operational_dates = NordicProfile.getOperationalDates(uic_operating_period)
+            if operational_dates[-1] > max_date:
+                max_date = operational_dates[-1]
+            uic_operating_periods[uic_operating_period.id] = operational_dates
+
+        for day_type_assignment in load_generator(con, DayTypeAssignment):
+            calendar_dates[day_type_assignment.day_type_ref.ref] = list(
+                GtfsProfile.getCalendarDates(day_type_assignment.day_type_ref.ref,
+                                             uic_operating_periods[day_type_assignment.uic_operating_period_ref_or_operating_period_ref_or_operating_day_ref_or_date.ref]))
+
         GtfsProfile.writeToZipFile(archive,'calendar_dates.txt', [item for row in calendar_dates.values() for item in row], write_header=True)
 
         GtfsProfile.writeToZipFile(archive,'feed_info.txt', [{
