@@ -136,12 +136,12 @@ def open_netex_file(filename):
     if filename.endswith('.xml.gz'):
         yield igzip_threaded.open(filename, 'rb', compresslevel=3, threads=3, encoding='utf-8')
     elif filename.endswith('.xml'):
-        yield open(filename, 'rb', encoding='utf-8')
+        yield open(filename, 'rb')
     elif filename.endswith('.zip'):
         import zipfile
         zip = zipfile.ZipFile(filename)
         for zipfilename in zip.filelist:
-            yield zip.open(zipfilename, encoding='utf-8')
+            yield zip.open(zipfilename)
 
 if __name__ == "__main__":
     filenames = ['/home/netex/NeTEx_ARR_NL_20240516_20240517_1418.xml.gz', '/home/netex/NeTEx_DOVA_epiap_20240517013000.xml.gz']
