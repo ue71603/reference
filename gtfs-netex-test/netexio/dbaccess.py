@@ -23,10 +23,14 @@ serializer_config.ignore_default_attributes = True
 serializer = XmlSerializer(config=serializer_config)
 serializer.encoding = 'utf-8'
 
-def load_local(con, clazz: T, limit=None, filter=None) -> List[T]:
+def load_local(con, clazz: T, limit=None, filter=None, cursor=False) -> List[T]:
     type = getattr(clazz.Meta, 'name', clazz.__name__)
 
-    cur = con.cursor()
+    if cursor:
+        cur = con.cursor()
+    else:
+        cur = con
+
     try:
         if filter is not None:
             cur.execute(f"SELECT object FROM {type} WHERE id = ?;", (filter,))
@@ -87,9 +91,9 @@ def load_lxml_generator(con, clazz, limit=None):
         yield etree.fromstring(xml[0])
 
 def write_lxml_generator(con, clazz, generator: Generator):
-    cur = con.cursor()
     objectname = getattr(clazz.Meta, 'name', clazz.__name__)
 
+    cur = con.cursor()
     if hasattr(clazz, 'order'):
         sql_create_table = f"CREATE TABLE IF NOT EXISTS {objectname} (id varchar(64) NOT NULL, version varchar(64) NOT NULL, ordr integer, object text NOT NULL, PRIMARY KEY (id, version, ordr));"
     elif hasattr(clazz, 'version'):
@@ -135,13 +139,22 @@ def write_lxml_generator(con, clazz, generator: Generator):
 
     print('\n')
 
-def get_single(con, clazz: T, id, version) -> T:
-    type = getattr(clazz.Meta, 'name', clazz.__name__)
-    cur = con.cursor()
-    if version == 'any' or version is None:
-        cur.execute(f"SELECT object FROM {type} WHERE id = ? ORDER BY version DESC LIMIT 1;", (id,))
+def get_single(con, clazz: T, id, version=None, cursor=False) -> T:
+    if cursor:
+        cur = con.cursor()
     else:
-        cur.execute(f"SELECT object FROM {type} WHERE id = ? AND version = ? LIMIT 1;", (id, version,))
+        cur = con
+
+    type = getattr(clazz.Meta, 'name', clazz.__name__)
+
+    try:
+        if version == 'any' or version is None:
+            cur.execute(f"SELECT object FROM {type} WHERE id = ? ORDER BY version DESC LIMIT 1;", (id,))
+        else:
+            cur.execute(f"SELECT object FROM {type} WHERE id = ? AND version = ? LIMIT 1;", (id, version,))
+    except:
+        pass
+        return
 
     row = cur.fetchone()
     if row is not None:
@@ -153,11 +166,15 @@ def get_single(con, clazz: T, id, version) -> T:
         return obj
 
 
-def write_objects(con, objs, empty=False, many=False, silent=False):
+def write_objects(con, objs, empty=False, many=False, silent=False, cursor=False):
     if len(objs) == 0:
         return
 
-    cur = con.cursor()
+    if cursor:
+        cur = con.cursor()
+    else:
+        cur = con
+
     clazz = objs[0].__class__
     objectname = getattr(clazz.Meta, 'name', clazz.__name__)
 
@@ -174,30 +191,34 @@ def write_objects(con, objs, empty=False, many=False, silent=False):
 
     cur.execute(sql_create_table)
 
-    if many:
-        print(objectname, len(objs))
-        if hasattr(clazz, 'order'):
-            cur.executemany(f'INSERT INTO {objectname} (id, version, ordr, object) VALUES (?, ?, ?, ?);', [(obj.id, obj.version, obj.order, serializer.render(obj, ns_map).replace('\n', '')) for obj in objs])
-        elif hasattr(clazz, 'version'):
-            cur.executemany(f'INSERT INTO {objectname} (id, version, object) VALUES (?, ?, ?);', [(obj.id, obj.version, serializer.render(obj, ns_map).replace('\n', '')) for obj in objs])
-        else:
-            cur.executemany(f'INSERT INTO {objectname} (id, object) VALUES (?, ?);',
-                            [(obj.id, serializer.render(obj, ns_map).replace('\n', '')) for obj in objs])
-    else:
-        for i in range(0, len(objs)):
-            obj = objs[i]
+    try:
+        if many:
+            print(objectname, len(objs))
             if hasattr(clazz, 'order'):
-                cur.execute(f'INSERT INTO {objectname} (id, version, ordr, object) VALUES (?, ?, ?, ?);', (obj.id, obj.version, obj.order, serializer.render(obj, ns_map).replace('\n', '')))
+                cur.executemany(f'INSERT INTO {objectname} (id, version, ordr, object) VALUES (?, ?, ?, ?);', [(obj.id, obj.version, obj.order, serializer.render(obj, ns_map).replace('\n', '')) for obj in objs])
             elif hasattr(clazz, 'version'):
-                cur.execute(f'INSERT INTO {objectname} (id, version, object) VALUES (?, ?, ?);', (obj.id, obj.version, serializer.render(obj, ns_map).replace('\n', '')))
+                cur.executemany(f'INSERT INTO {objectname} (id, version, object) VALUES (?, ?, ?);', [(obj.id, obj.version, serializer.render(obj, ns_map).replace('\n', '')) for obj in objs])
             else:
-                cur.execute(f'INSERT INTO {objectname} (id, object) VALUES (?, ?);', (obj.id, serializer.render(obj, ns_map).replace('\n', '')))
+                cur.executemany(f'INSERT INTO {objectname} (id, object) VALUES (?, ?);',
+                                [(obj.id, serializer.render(obj, ns_map).replace('\n', '')) for obj in objs])
+        else:
+            for i in range(0, len(objs)):
+                obj = objs[i]
+                if hasattr(clazz, 'order'):
+                    cur.execute(f'INSERT INTO {objectname} (id, version, ordr, object) VALUES (?, ?, ?, ?);', (obj.id, obj.version, obj.order, serializer.render(obj, ns_map).replace('\n', '')))
+                elif hasattr(clazz, 'version'):
+                    cur.execute(f'INSERT INTO {objectname} (id, version, object) VALUES (?, ?, ?);', (obj.id, obj.version, serializer.render(obj, ns_map).replace('\n', '')))
+                else:
+                    cur.execute(f'INSERT INTO {objectname} (id, object) VALUES (?, ?);', (obj.id, serializer.render(obj, ns_map).replace('\n', '')))
 
-            if not silent:
-                if i % 13 == 0:
-                    print('\r', objectname, str(i), end = '')
+                if not silent:
+                    if i % 13 == 0:
+                        print('\r', objectname, str(i), end = '')
         if not silent:
             print('\r', objectname, len(objs), end='')
+    except:
+        raise
+        # pass
 
 
 def write_generator(con, clazz, generator: Generator, empty=False):
@@ -363,8 +384,12 @@ def get_interesting_classes(filter=None):
 
     return clean_element_names, interesting_element_names
 
-def setup_database(con, classes, clean=False):
-    cur = con.cursor()
+def setup_database(con, classes, clean=False, cursor=False):
+    if cursor:
+        cur = con.cursor()
+    else:
+        cur = con
+
     clean_element_names, interesting_element_names = classes
 
     if clean:
@@ -396,11 +421,15 @@ def setup_database(con, classes, clean=False):
         print(sql_create_table)
         cur.execute(sql_create_table)
 
-def insert_database(con, classes, f=None):
+def insert_database(con, classes, f=None, cursor=False):
     if f is None:
         return
 
-    cur = con.cursor()
+    if cursor:
+        cur = con.cursor()
+    else:
+        cur = con
+
     clean_element_names, interesting_element_names = classes
     events = ("start", "end")
     context = etree.iterparse(f, events=events, remove_blank_text=True)

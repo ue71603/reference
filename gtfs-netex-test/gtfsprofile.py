@@ -1,14 +1,17 @@
 import csv
 import datetime
+import warnings
 from typing import List, Union
 import io
 from pyproj import Transformer
+from xsdata.models.datatype import XmlDateTime
 
 from netex import Line, MultilingualString, AllVehicleModesOfTransportEnumeration, InfoLinksRelStructure, \
     ScheduledStopPoint, StopPlace, AccessibilityAssessment, LimitationStatusEnumeration, TariffZoneRefsRelStructure, \
     PrivateCode, PrivateCodeStructure, Quay, PresentationStructure, Authority, Branding, Operator, ServiceJourney, \
     ServiceJourneyPattern, LineRefStructure, RouteView, StopArea, StopAreaRef, StopPlaceRef, Route, RouteLink, \
-    ServiceLink, PublicCodeStructure, StopPlaceEntrance
+    ServiceLink, PublicCodeStructure, StopPlaceEntrance, TemplateServiceJourney, HeadwayJourneyGroup, \
+    JourneyFrequencyGroupVersionStructure
 
 import operator as operator_f
 
@@ -197,8 +200,11 @@ class GtfsProfile:
             agency_id = line.branding_ref.ref
         elif line.operator_ref is not None:
             agency_id = line.operator_ref.ref
-        else:
+        elif line.authority_ref is not None:
             agency_id = line.authority_ref.ref
+        else:
+            warnings.warn(f"Can't handle {line.id} because no agency can be found.")
+            return
 
         route = {'route_id': line.id,
                  'agency_id': agency_id,
@@ -323,7 +329,7 @@ class GtfsProfile:
                         return service_journey_pattern.route_ref_or_route_view.flexible_line_ref_or_line_ref_or_line_view.ref
 
     @staticmethod
-    def projectServiceJourneyToTrip(service_journey: ServiceJourney, service_journey_pattern: ServiceJourneyPattern) -> dict:
+    def projectServiceJourneyToTrip(service_journey: ServiceJourney | TemplateServiceJourney, service_journey_pattern: ServiceJourneyPattern) -> dict:
         if service_journey.day_types:
             service_id = service_journey.day_types.day_type_ref[0].ref
         else:
@@ -345,6 +351,45 @@ class GtfsProfile:
         return trip
 
     @staticmethod
+    def projectTemplateServiceJourneyToFrequency(template_service_journey: TemplateServiceJourney) -> dict:
+        for frequency_group in template_service_journey.frequency_groups.headway_journey_group_ref_or_headway_journey_group_or_rhythmical_journey_group_ref_or_rhythmical_journey_group:
+            if isinstance(frequency_group, HeadwayJourneyGroup):
+                first_day_offset = None
+                last_day_offset = None
+                last_departure_time = None
+                for element in frequency_group.first_day_offset_or_last_departure_time_or_last_day_offset_or_first_arrival_time_or_last_arrival_time:
+                    if isinstance(element, JourneyFrequencyGroupVersionStructure.FirstDayOffset):
+                        first_day_offset = element
+                    if isinstance(element, JourneyFrequencyGroupVersionStructure.LastDayOffset):
+                        last_day_offset = element
+                    if isinstance(element, JourneyFrequencyGroupVersionStructure.LastArrivalTime):
+                        last_arrival_time = element.value
+                    if isinstance(element, JourneyFrequencyGroupVersionStructure.LastDepartureTime):
+                        last_departure_time = element.value
+
+                if last_departure_time is None:
+                    warnings.warn("We can't handle LastArrivalTime yet.")
+                    continue
+
+                if frequency_group.scheduled_headway_interval is None:
+                    warnings.warn("We can't handle NonExactTimes yet.")
+                    continue
+
+                headway_secs = datetime.timedelta(days=frequency_group.scheduled_headway_interval.days or 0,
+                                   hours=frequency_group.scheduled_headway_interval.hours or 0,
+                                   minutes=frequency_group.scheduled_headway_interval.minutes or 0,
+                                   seconds=frequency_group.scheduled_headway_interval.seconds or 0) # Technically not correct, practically: yes
+
+                frequency = {'trip_id': template_service_journey.id,
+                        'start_time': GtfsProfile.addDayOffset(frequency_group.first_departure_time.to_time(), first_day_offset),
+                        'end_time': GtfsProfile.addDayOffset(last_departure_time, last_day_offset),
+                        'headway_secs': int(headway_secs.total_seconds()),
+                        'exact_times': int(frequency_group.scheduled_headway_interval is not None)
+                        }
+
+                yield frequency
+
+    @staticmethod
     def addDayOffset(time, day_offset):
         if day_offset is None:
             return time
@@ -354,8 +399,13 @@ class GtfsProfile:
         return f"{h:02d}:{m}:{s}"
 
     @staticmethod
-    def projectServiceJourneyToStopTimes(service_journey: ServiceJourney) -> List[dict]:
+    def projectServiceJourneyToStopTimes(service_journey: ServiceJourney | TemplateServiceJourney) -> List[dict]:
         for call in service_journey.calls.call:
+            if call.arrival is None:
+                call.arrival = call.departure
+            elif call.departure is None:
+                call.departure = call.arrival
+
             arrival_time = GtfsProfile.addDayOffset(call.arrival.time, call.arrival.day_offset)
             departure_time = GtfsProfile.addDayOffset(call.departure.time, call.departure.day_offset)
             if arrival_time is None:
