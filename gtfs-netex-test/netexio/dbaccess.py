@@ -16,6 +16,7 @@ ns_map = {'': 'http://www.netex.org.uk/netex', 'gml': 'http://www.opengis.net/gm
 context = XmlContext()
 config = ParserConfig(fail_on_unknown_properties=False)
 parser = XmlParser(context=context, config=config, handler=LxmlEventHandler)
+parser.encoding='utf-8'
 
 serializer_config = SerializerConfig(ignore_default_attributes=True)
 serializer_config.indent = None

@@ -134,7 +134,7 @@ def insert_database(con, classes, f=None):
 
 def open_netex_file(filename):
     if filename.endswith('.xml.gz'):
-        yield igzip_threaded.open(filename, 'rb', compresslevel=3, threads=3)
+        yield igzip_threaded.open(filename, 'rb', compresslevel=3, threads=3, encoding='utf-8')
     elif filename.endswith('.xml'):
         yield open(filename, 'rb')
     elif filename.endswith('.zip'):
